@@ -537,12 +537,11 @@ To contribute to the project:
 
 ## 📄 License
 
-[Specify project license]
+GNU license
 
-## 👤 Author
+## 👤 Author: 
 
-[Author information]
-
+Vittorio Margherita
+   www.bvrobotics.com
 ---
 
-**Developed with ❤️ using Planner-Executor architecture and TDD**
