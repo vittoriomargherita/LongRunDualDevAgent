@@ -1033,13 +1033,140 @@ REQUIREMENTS:
         self.thought_chain.append(thought_entry)
         print(f"💭 {thought_entry}")
     
+    def _extract_api_endpoints(self, lines: List[str]) -> List[Dict[str, Any]]:
+        """
+        Extract API endpoint information from PHP files.
+        
+        Returns:
+            List of endpoint dictionaries with action, method, parameters, response format
+        """
+        import re
+        endpoints = []
+        full_text = '\n'.join(lines)
+        
+        # Look for switch/case patterns for API actions
+        switch_match = re.search(r'switch\s*\(\s*\$input\[[\'"]action[\'"]\s*\]\s*\)\s*\{([^}]+)\}', full_text, re.DOTALL)
+        if switch_match:
+            switch_body = switch_match.group(1)
+            # Extract case statements
+            case_pattern = r"case\s*['\"]([^'\"]+)['\"]\s*:"
+            cases = re.findall(case_pattern, switch_body)
+            for case in cases:
+                endpoints.append({
+                    'action': case,
+                    'method': 'POST',  # Default, will check REQUEST_METHOD
+                    'parameters': [],
+                    'response_format': 'json'
+                })
+        
+        # Check for REQUEST_METHOD
+        if re.search(r'\$_SERVER\[[\'"]REQUEST_METHOD[\'"]\s*\]\s*===\s*[\'"]POST[\'"]', full_text):
+            for ep in endpoints:
+                ep['method'] = 'POST'
+        elif re.search(r'\$_SERVER\[[\'"]REQUEST_METHOD[\'"]\s*\]\s*===\s*[\'"]GET[\'"]', full_text):
+            for ep in endpoints:
+                ep['method'] = 'GET'
+        
+        # Extract function calls to understand parameters
+        for i, line in enumerate(lines):
+            if 'case' in line and 'action' in line.lower():
+                # Look ahead for function calls
+                for j in range(i, min(i+10, len(lines))):
+                    func_match = re.search(r'(\w+)\s*\(\s*\$pdo\s*,?\s*([^)]*)\)', lines[j])
+                    if func_match:
+                        func_name = func_match.group(1)
+                        params = func_match.group(2)
+                        # Find corresponding endpoint
+                        for ep in endpoints:
+                            if ep['action'] in line:
+                                ep['function'] = func_name
+                                # Extract parameters from function call
+                                param_matches = re.findall(r'\$input\[[\'"](\w+)[\'"]\s*\]', params)
+                                ep['parameters'] = param_matches
+                                break
+        
+        # Extract response format from return statements
+        for ep in endpoints:
+            func_name = ep.get('function', '')
+            if func_name:
+                # Find function definition
+                func_pattern = f'function\\s+{func_name}\\s*\\([^)]*\\)\\s*{{([^}}]+)}}'
+                func_match = re.search(func_pattern, full_text, re.DOTALL)
+                if func_match:
+                    func_body = func_match.group(1)
+                    # Check for json_encode patterns
+                    json_matches = re.findall(r'json_encode\s*\(\s*\[([^\]]+)\]', func_body)
+                    if json_matches:
+                        # Extract keys from JSON structure
+                        keys = re.findall(r'[\'"](\w+)[\'"]\s*=>', json_matches[0])
+                        ep['response_keys'] = keys
+        
+        return endpoints
+    
+    def _extract_frontend_api_calls(self, lines: List[str]) -> List[Dict[str, Any]]:
+        """
+        Extract API calls from HTML/JavaScript files.
+        
+        Returns:
+            List of API call dictionaries with URL, method, parameters, expected response
+        """
+        import re
+        api_calls = []
+        full_text = '\n'.join(lines)
+        
+        # Find all fetch() calls
+        fetch_pattern = r'fetch\s*\(\s*[\'"]([^\'"]+)[\'"]\s*,?\s*({[^}]*})?\s*\)'
+        fetch_matches = re.finditer(fetch_pattern, full_text, re.DOTALL)
+        
+        for match in fetch_matches:
+            url = match.group(1)
+            options = match.group(2) if match.group(2) else '{}'
+            
+            # Extract method
+            method_match = re.search(r'method\s*:\s*[\'"](\w+)[\'"]', options, re.IGNORECASE)
+            method = method_match.group(1).upper() if method_match else 'GET'
+            
+            # Extract action from URL
+            action_match = re.search(r'action[=:](\w+)', url)
+            action = action_match.group(1) if action_match else None
+            
+            # Extract parameters from URL or body
+            params = {}
+            if '?' in url:
+                query_params = url.split('?')[1].split('&')
+                for param in query_params:
+                    if '=' in param:
+                        key, value = param.split('=', 1)
+                        params[key] = value
+            
+            # Extract expected response structure (look for .json() calls after fetch)
+            response_keys = []
+            # Find the line after fetch and look for .json() or response usage
+            match_end = match.end()
+            next_lines = full_text[match_end:match_end+500]
+            json_match = re.search(r'\.json\s*\(\s*\)', next_lines)
+            if json_match:
+                # Look for property access like data.seats, data.success
+                prop_matches = re.findall(r'data\.(\w+)', next_lines)
+                response_keys = prop_matches
+            
+            api_calls.append({
+                'url': url,
+                'method': method,
+                'action': action,
+                'parameters': params,
+                'expected_response_keys': response_keys
+            })
+        
+        return api_calls
+    
     def _get_file_summary(self, file_path: str, max_lines: int = 50) -> str:
         """
-        Get a summary of a file's content (first lines and key information).
+        Get a comprehensive summary of a file's content including API endpoints, JSON formats, and dependencies.
         
         Args:
             file_path: Path to the file
-            max_lines: Maximum number of lines to include
+            max_lines: Maximum number of lines to include in preview
             
         Returns:
             Summary string with key information
@@ -1055,7 +1182,7 @@ REQUIREMENTS:
             if not lines:
                 return f"File {file_path} is empty"
             
-            # Get first max_lines
+            # Get first max_lines for preview
             preview = ''.join(lines[:max_lines])
             
             # Extract key information based on file type
@@ -1066,22 +1193,84 @@ REQUIREMENTS:
                 requires = [line.strip() for line in lines if line.strip().startswith(('require', 'include'))]
                 if requires:
                     summary_parts.append(f"Requires/Includes: {', '.join(requires[:5])}")
+                    # CRITICAL: Check if required files exist
+                    existing_requires = []
+                    missing_requires = []
+                    for req_line in requires[:5]:
+                        # Extract filename from require/include
+                        import re
+                        file_match = re.search(r'[\'"]([^\'"]+\.php)[\'"]', req_line)
+                        if file_match:
+                            req_file = file_match.group(1)
+                            req_path = os.path.join(self.output_dir, "src", req_file)
+                            if os.path.exists(req_path):
+                                existing_requires.append(f"✅ {req_file} EXISTS")
+                            else:
+                                missing_requires.append(f"❌ {req_file} MISSING - file does not exist!")
+                    if existing_requires:
+                        summary_parts.append(f"  Dependency Status: {', '.join(existing_requires)}")
+                    if missing_requires:
+                        summary_parts.append(f"  ⚠️ WARNING: {', '.join(missing_requires)}")
                 
                 # Extract class definitions
                 classes = [line.strip() for line in lines if 'class ' in line and '{' in line]
                 if classes:
                     summary_parts.append(f"Classes: {', '.join(classes[:3])}")
                 
-                # Extract function definitions
-                functions = [line.strip().split('(')[0].replace('function ', '') for line in lines if line.strip().startswith('function ')]
+                # Extract function definitions with parameters
+                import re
+                functions = []
+                for line in lines:
+                    func_match = re.search(r'function\s+(\w+)\s*\(([^)]*)\)', line)
+                    if func_match:
+                        func_name = func_match.group(1)
+                        params = func_match.group(2)
+                        param_list = [p.strip().split('$')[-1] for p in params.split(',') if p.strip()]
+                        functions.append(f"{func_name}({', '.join(param_list[:5])})")
                 if functions:
                     summary_parts.append(f"Functions: {', '.join(functions[:10])}")
+                
+                # Extract API endpoints if this is an API file
+                if 'api' in file_path.lower() or 'api.php' in file_path:
+                    endpoints = self._extract_api_endpoints(lines)
+                    if endpoints:
+                        summary_parts.append(f"\n🌐 API ENDPOINTS:")
+                        for ep in endpoints:
+                            ep_str = f"  - {ep['action']} ({ep['method']})"
+                            if ep.get('parameters'):
+                                ep_str += f" - Parameters: {', '.join(ep['parameters'])}"
+                            if ep.get('response_keys'):
+                                ep_str += f" - Returns: {', '.join(ep['response_keys'])}"
+                            summary_parts.append(ep_str)
+                
+                # Extract JSON response patterns
+                json_patterns = []
+                for line in lines:
+                    if 'json_encode' in line:
+                        # Extract JSON structure
+                        json_match = re.search(r'json_encode\s*\(\s*\[?\s*[\'"](\w+)[\'"]\s*=>', line)
+                        if json_match:
+                            json_patterns.append(json_match.group(1))
+                if json_patterns:
+                    summary_parts.append(f"JSON Response Keys: {', '.join(set(json_patterns[:10]))}")
             
             elif file_path.endswith('.html'):
                 # Extract script sources and important elements
                 scripts = [line.strip() for line in lines if '<script' in line.lower() or 'src=' in line.lower()]
                 if scripts:
                     summary_parts.append(f"Scripts/External: {', '.join(scripts[:3])}")
+                
+                # Extract API calls from JavaScript
+                api_calls = self._extract_frontend_api_calls(lines)
+                if api_calls:
+                    summary_parts.append(f"\n🌐 FRONTEND API CALLS:")
+                    for call in api_calls:
+                        call_str = f"  - {call['url']} ({call['method']})"
+                        if call.get('action'):
+                            call_str += f" - Action: {call['action']}"
+                        if call.get('expected_response_keys'):
+                            call_str += f" - Expects: {', '.join(call['expected_response_keys'])}"
+                        summary_parts.append(call_str)
             
             summary_parts.append(f"\nFirst {min(max_lines, len(lines))} lines:\n{preview}")
             
@@ -1093,9 +1282,139 @@ REQUIREMENTS:
         except Exception as e:
             return f"Error reading {file_path}: {str(e)}"
     
+    def _generate_coherence_report(self, project_type: str) -> str:
+        """
+        Generate a coherence report analyzing frontend-backend consistency.
+        
+        Args:
+            project_type: Type of project (PHP, Python, etc.)
+            
+        Returns:
+            Coherence report string with detected issues
+        """
+        if project_type != "PHP":
+            return ""  # Only for PHP projects with frontend-backend separation
+        
+        import re
+        issues = []
+        warnings = []
+        
+        # Find HTML files
+        src_dir = os.path.join(self.output_dir, "src")
+        if not os.path.exists(src_dir):
+            return ""
+        
+        html_files = [f for f in os.listdir(src_dir) if f.endswith('.html')]
+        php_files = [f for f in os.listdir(src_dir) if f.endswith('.php')]
+        
+        if not html_files or not php_files:
+            return ""
+        
+        # Extract frontend API calls
+        frontend_calls = []
+        for html_file in html_files:
+            html_path = os.path.join(src_dir, html_file)
+            try:
+                with open(html_path, 'r', encoding='utf-8') as f:
+                    html_lines = f.readlines()
+                calls = self._extract_frontend_api_calls(html_lines)
+                frontend_calls.extend(calls)
+            except:
+                pass
+        
+        # Extract backend endpoints
+        backend_endpoints = []
+        api_file = None
+        for php_file in php_files:
+            if 'api' in php_file.lower():
+                api_file = php_file
+                api_path = os.path.join(src_dir, php_file)
+                try:
+                    with open(api_path, 'r', encoding='utf-8') as f:
+                        api_lines = f.readlines()
+                    endpoints = self._extract_api_endpoints(api_lines)
+                    backend_endpoints.extend(endpoints)
+                except:
+                    pass
+                break
+        
+        # Compare frontend calls with backend endpoints
+        if frontend_calls and backend_endpoints:
+            report_parts = ["\n🔍 COHERENCE ANALYSIS (Frontend-Backend):"]
+            
+            # Check for endpoint mismatches
+            frontend_actions = {call['action']: call for call in frontend_calls if call.get('action')}
+            backend_actions = {ep['action']: ep for ep in backend_endpoints}
+            
+            # Missing endpoints
+            missing = set(frontend_actions.keys()) - set(backend_actions.keys())
+            if missing:
+                for action in missing:
+                    call = frontend_actions[action]
+                    issues.append(f"❌ Frontend calls '{action}' but backend has no handler")
+                    report_parts.append(f"  ❌ MISSING ENDPOINT: Frontend calls action='{action}' ({call['method']}) but backend doesn't handle it")
+            
+            # Extra endpoints (not called by frontend)
+            extra = set(backend_actions.keys()) - set(frontend_actions.keys())
+            if extra:
+                for action in extra:
+                    warnings.append(f"⚠️ Backend has '{action}' endpoint but frontend doesn't call it")
+                    report_parts.append(f"  ⚠️ UNUSED ENDPOINT: Backend handles '{action}' but frontend doesn't call it")
+            
+            # Method mismatches
+            for action in set(frontend_actions.keys()) & set(backend_actions.keys()):
+                frontend_call = frontend_actions[action]
+                backend_ep = backend_actions[action]
+                if frontend_call['method'] != backend_ep['method']:
+                    issues.append(f"❌ Method mismatch for '{action}': frontend uses {frontend_call['method']}, backend expects {backend_ep['method']}")
+                    report_parts.append(f"  ❌ METHOD MISMATCH: '{action}' - Frontend: {frontend_call['method']}, Backend: {backend_ep['method']}")
+            
+            # JSON format mismatches
+            for action in set(frontend_actions.keys()) & set(backend_actions.keys()):
+                frontend_call = frontend_actions[action]
+                backend_ep = backend_actions[action]
+                frontend_keys = set(frontend_call.get('expected_response_keys', []))
+                backend_keys = set(backend_ep.get('response_keys', []))
+                if frontend_keys and backend_keys:
+                    missing_keys = frontend_keys - backend_keys
+                    extra_keys = backend_keys - frontend_keys
+                    if missing_keys or extra_keys:
+                        warnings.append(f"⚠️ JSON format mismatch for '{action}'")
+                        if missing_keys:
+                            report_parts.append(f"  ⚠️ JSON MISMATCH '{action}': Frontend expects keys {missing_keys} but backend doesn't return them")
+                        if extra_keys:
+                            report_parts.append(f"  ⚠️ JSON MISMATCH '{action}': Backend returns keys {extra_keys} but frontend doesn't use them")
+            
+            # Check for require/include mismatches
+            if api_file:
+                api_path = os.path.join(src_dir, api_file)
+                try:
+                    with open(api_path, 'r', encoding='utf-8') as f:
+                        api_content = f.read()
+                    require_matches = re.findall(r'require\s+[\'"]([^\'"]+\.php)[\'"]', api_content)
+                    for req_file in require_matches:
+                        req_path = os.path.join(src_dir, req_file)
+                        if not os.path.exists(req_path):
+                            # Check if similar file exists
+                            similar_files = [f for f in php_files if req_file.replace('.php', '') in f or f.replace('.php', '') in req_file]
+                            if similar_files:
+                                issues.append(f"❌ api.php requires '{req_file}' but file doesn't exist. Similar file found: {similar_files[0]}")
+                                report_parts.append(f"  ❌ DEPENDENCY ERROR: api.php requires '{req_file}' but it doesn't exist. Did you mean '{similar_files[0]}'?")
+                            else:
+                                issues.append(f"❌ api.php requires '{req_file}' but file doesn't exist")
+                                report_parts.append(f"  ❌ DEPENDENCY ERROR: api.php requires '{req_file}' but file doesn't exist")
+                except:
+                    pass
+            
+            if issues or warnings:
+                report_parts.insert(1, f"\n  Found {len(issues)} critical issues and {len(warnings)} warnings:")
+                return '\n'.join(report_parts)
+        
+        return ""
+    
     def _get_existing_files_context(self, project_type: str) -> str:
         """
-        Get context about existing files in the output directory.
+        Get context about existing files in the output directory with enhanced information.
         
         Args:
             project_type: Type of project (PHP, Python, etc.)
@@ -1133,6 +1452,12 @@ REQUIREMENTS:
                 context_parts.append(f"\n✅ COMPLETED FEATURES (documentation exists):")
                 for doc in sorted(doc_files):
                     context_parts.append(f"  - {doc}")
+        
+        # Generate coherence report for PHP projects
+        if project_type == "PHP":
+            coherence_report = self._generate_coherence_report(project_type)
+            if coherence_report:
+                context_parts.append(coherence_report)
         
         if not context_parts:
             return "\n📁 NO EXISTING FILES - This is the first feature."
@@ -1730,6 +2055,108 @@ OUTPUT FORMAT: You must respond with a VALID, COMPLETE JSON ARRAY only. No markd
         
         return command
     
+    def _validate_plan_coherence(self, plan: List[Dict[str, Any]], project_type: str) -> tuple[bool, List[str]]:
+        """
+        Validate plan for coherence issues before execution.
+        
+        Args:
+            plan: Execution plan from Planner
+            project_type: Type of project (PHP, Python, etc.)
+            
+        Returns:
+            (is_valid, list_of_warnings)
+        """
+        warnings = []
+        
+        if project_type != "PHP":
+            return True, warnings
+        
+        # Extract files that will be written
+        files_to_write = []
+        for action in plan:
+            if action.get('action') == 'write_file':
+                target = action.get('target', '')
+                if target:
+                    files_to_write.append(target)
+        
+        # Check for require/include mismatches in PHP files
+        src_dir = os.path.join(self.output_dir, "src")
+        if os.path.exists(src_dir):
+            existing_php_files = [f for f in os.listdir(src_dir) if f.endswith('.php')]
+            
+            for action in plan:
+                if action.get('action') == 'write_file':
+                    target = action.get('target', '')
+                    if target.endswith('.php'):
+                        # Check if instruction mentions require/include
+                        instruction = action.get('content_instruction', '')
+                        import re
+                        require_matches = re.findall(r'require\s+[\'"]([^\'"]+\.php)[\'"]', instruction)
+                        for req_file in require_matches:
+                            # Check if file exists
+                            req_path = os.path.join(src_dir, req_file)
+                            if not os.path.exists(req_path):
+                                # Check for similar files
+                                similar = [f for f in existing_php_files if req_file.replace('.php', '') in f or f.replace('.php', '') in req_file]
+                                if similar:
+                                    warnings.append(f"⚠️ Plan will write {target} requiring '{req_file}' but file doesn't exist. Did you mean '{similar[0]}'?")
+                                else:
+                                    warnings.append(f"⚠️ Plan will write {target} requiring '{req_file}' but file doesn't exist")
+        
+        return len(warnings) == 0, warnings
+    
+    def _validate_generated_code(self, project_type: str) -> tuple[bool, List[str]]:
+        """
+        Validate generated code for coherence issues after execution.
+        
+        Args:
+            project_type: Type of project (PHP, Python, etc.)
+            
+        Returns:
+            (is_valid, list_of_errors)
+        """
+        errors = []
+        
+        if project_type != "PHP":
+            return True, errors
+        
+        # Check for require/include mismatches
+        src_dir = os.path.join(self.output_dir, "src")
+        if not os.path.exists(src_dir):
+            return True, errors
+        
+        php_files = [f for f in os.listdir(src_dir) if f.endswith('.php')]
+        
+        for php_file in php_files:
+            php_path = os.path.join(src_dir, php_file)
+            try:
+                with open(php_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                import re
+                require_matches = re.findall(r'require\s+[\'"]([^\'"]+\.php)[\'"]', content)
+                for req_file in require_matches:
+                    req_path = os.path.join(src_dir, req_file)
+                    if not os.path.exists(req_path):
+                        # Check for similar files
+                        similar = [f for f in php_files if req_file.replace('.php', '') in f or f.replace('.php', '') in req_file]
+                        if similar:
+                            errors.append(f"❌ {php_file} requires '{req_file}' but file doesn't exist. Did you mean '{similar[0]}'?")
+                        else:
+                            errors.append(f"❌ {php_file} requires '{req_file}' but file doesn't exist")
+            except Exception as e:
+                pass
+        
+        # Check coherence report
+        coherence_report = self._generate_coherence_report(project_type)
+        if coherence_report and '❌' in coherence_report:
+            # Extract critical issues
+            import re
+            critical_issues = re.findall(r'❌ ([^\n]+)', coherence_report)
+            errors.extend([f"❌ {issue}" for issue in critical_issues])
+        
+        return len(errors) == 0, errors
+    
     def run(self) -> None:
         """
         Main execution loop with clear feature-by-feature workflow.
@@ -1799,8 +2226,26 @@ OUTPUT FORMAT: You must respond with a VALID, COMPLETE JSON ARRAY only. No markd
                     time.sleep(2)
                     continue
                 
+                # Validate plan coherence before execution
+                project_type = self._detect_project_type()
+                plan_valid, plan_warnings = self._validate_plan_coherence(plan, project_type)
+                if plan_warnings:
+                    print(f"\n⚠️  Plan validation warnings:")
+                    for warning in plan_warnings:
+                        print(f"   {warning}")
+                    # Continue anyway, but log warnings
+                
                 # Execute plan
                 result = self._execute_feature_plan(plan, feature_name, feature_idx == 1)
+                
+                # Validate generated code after execution
+                code_valid, code_errors = self._validate_generated_code(project_type)
+                if not code_valid:
+                    print(f"\n❌ Code validation failed after execution:")
+                    for error in code_errors:
+                        print(f"   {error}")
+                    # Treat as failure
+                    result = (False, f"Code validation failed: {', '.join(code_errors)}")
                 if isinstance(result, tuple):
                     success, test_error = result
                 else:
@@ -1872,7 +2317,36 @@ Return ONLY the JSON array, no markdown, no explanations."""
         # CRITICAL: Add information about existing files so Planner knows what's already implemented
         existing_files_context = self._get_existing_files_context(project_type)
         context += existing_files_context
-        context += "\n\n⚠️ IMPORTANT: Review the EXISTING FILES above before creating new files. Use existing files when possible (e.g., if db.php exists, use it instead of creating database.php). Ensure consistency with existing code structure and dependencies.\n\n"
+        
+        # Add explicit coherence rules
+        context += "\n\n🚨 CRITICAL COHERENCE RULES - YOU MUST FOLLOW THESE:\n\n"
+        context += "1. FILE DEPENDENCIES:\n"
+        context += "   - Check ALL require/include statements in existing files above\n"
+        context += "   - If a file requires 'database.php' but 'db.php' exists, you MUST use 'db.php' instead\n"
+        context += "   - If dependency status shows ❌ MISSING, you MUST fix the require statement to use existing file\n"
+        context += "   - DO NOT create new files with different names if similar files exist\n\n"
+        
+        context += "2. API ENDPOINT MATCHING:\n"
+        context += "   - If COHERENCE ANALYSIS shows mismatches, you MUST fix them\n"
+        context += "   - Frontend action names MUST exactly match backend case statements\n"
+        context += "   - HTTP methods MUST match (GET vs POST)\n"
+        context += "   - If frontend calls 'getSeats' but backend has 'get_seats', you MUST make them match\n\n"
+        
+        context += "3. JSON FORMAT CONSISTENCY:\n"
+        context += "   - Frontend expected response keys MUST match backend return keys\n"
+        context += "   - If frontend expects {success: true, seats: []}, backend MUST return exactly that structure\n"
+        context += "   - Check COHERENCE ANALYSIS for JSON format mismatches and fix them\n\n"
+        
+        context += "4. BEFORE WRITING api.php:\n"
+        context += "   - Read ALL HTML files to see all fetch() calls\n"
+        context += "   - Extract exact endpoint names, HTTP methods, and expected JSON formats\n"
+        context += "   - Ensure api.php handles ALL endpoints the frontend calls\n"
+        context += "   - Ensure response JSON structure matches what frontend expects\n\n"
+        
+        context += "5. BEFORE WRITING ANY FILE:\n"
+        context += "   - Check if similar file exists (e.g., db.php vs database.php)\n"
+        context += "   - Use existing file names and structures\n"
+        context += "   - Maintain consistency with existing code patterns\n\n"
         
         if last_test_error:
             context += f"⚠️ LAST ERROR:\n{last_test_error}\n\n"
@@ -2260,7 +2734,36 @@ Return ONLY the JSON array, no markdown, no explanations."""
         # CRITICAL: Add information about existing files so Planner knows what's already implemented
         existing_files_context = self._get_existing_files_context(project_type)
         context += existing_files_context
-        context += "\n\n⚠️ IMPORTANT: Review the EXISTING FILES above before creating new files. Use existing files when possible (e.g., if db.php exists, use it instead of creating database.php). Ensure consistency with existing code structure and dependencies.\n\n"
+        
+        # Add explicit coherence rules
+        context += "\n\n🚨 CRITICAL COHERENCE RULES - YOU MUST FOLLOW THESE:\n\n"
+        context += "1. FILE DEPENDENCIES:\n"
+        context += "   - Check ALL require/include statements in existing files above\n"
+        context += "   - If a file requires 'database.php' but 'db.php' exists, you MUST use 'db.php' instead\n"
+        context += "   - If dependency status shows ❌ MISSING, you MUST fix the require statement to use existing file\n"
+        context += "   - DO NOT create new files with different names if similar files exist\n\n"
+        
+        context += "2. API ENDPOINT MATCHING:\n"
+        context += "   - If COHERENCE ANALYSIS shows mismatches, you MUST fix them\n"
+        context += "   - Frontend action names MUST exactly match backend case statements\n"
+        context += "   - HTTP methods MUST match (GET vs POST)\n"
+        context += "   - If frontend calls 'getSeats' but backend has 'get_seats', you MUST make them match\n\n"
+        
+        context += "3. JSON FORMAT CONSISTENCY:\n"
+        context += "   - Frontend expected response keys MUST match backend return keys\n"
+        context += "   - If frontend expects {success: true, seats: []}, backend MUST return exactly that structure\n"
+        context += "   - Check COHERENCE ANALYSIS for JSON format mismatches and fix them\n\n"
+        
+        context += "4. BEFORE WRITING api.php:\n"
+        context += "   - Read ALL HTML files to see all fetch() calls\n"
+        context += "   - Extract exact endpoint names, HTTP methods, and expected JSON formats\n"
+        context += "   - Ensure api.php handles ALL endpoints the frontend calls\n"
+        context += "   - Ensure response JSON structure matches what frontend expects\n\n"
+        
+        context += "5. BEFORE WRITING ANY FILE:\n"
+        context += "   - Check if similar file exists (e.g., db.php vs database.php)\n"
+        context += "   - Use existing file names and structures\n"
+        context += "   - Maintain consistency with existing code patterns\n\n"
         
         if last_test_error:
             context += f"⚠️ LAST ERROR:\n{last_test_error}\n\n"

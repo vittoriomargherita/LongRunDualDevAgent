@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous AI Development Agent: A Planner-Executor Architecture for Test-Driven Code Generation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            line-height: 1.8;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 60px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+
+        h1 {
+            font-size: 2.8em;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 2em;
+            color: #2c3e50;
+            margin-top: 50px;
+            margin-bottom: 25px;
+            border-left: 5px solid #3498db;
+            padding-left: 15px;
+        }
+
+        h3 {
+            font-size: 1.5em;
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        h4 {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .authors {
+            text-align: center;
+            font-style: italic;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .abstract {
+            background: #ecf0f1;
+            padding: 25px;
+            border-left: 5px solid #3498db;
+            margin: 30px 0;
+            border-radius: 5px;
+        }
+
+        .abstract h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .metric-value {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .diagram {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+
+        .architecture-box {
+            display: inline-block;
+            background: white;
+            border: 2px solid #3498db;
+            padding: 15px 25px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            min-width: 200px;
+        }
+
+        .architecture-box.planner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #5a67d8;
+        }
+
+        .architecture-box.executor {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-color: #e91e63;
+        }
+
+        .architecture-box.tools {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-color: #2196f3;
+        }
+
+        .arrow {
+            font-size: 2em;
+            color: #3498db;
+            margin: 10px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .workflow-step {
+            background: #ecf0f1;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 5px solid #3498db;
+            border-radius: 5px;
+        }
+
+        .workflow-step h4 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 30px 0;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+
+        .bar {
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            height: 40px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            font-weight: bold;
+            transition: width 0.3s ease;
+            min-width: 200px;
+            white-space: nowrap;
+        }
+
+        .future-work {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+            border-left: 5px solid #e17055;
+        }
+
+        .future-work h3 {
+            color: #2d3436;
+        }
+
+        .rag-diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .rag-box {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+
+        .performance-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .comparison-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #dee2e6;
+        }
+
+        .comparison-card h4 {
+            color: #495057;
+            margin-top: 0;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-top: 15px;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .citation {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 2em;
+            }
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            .performance-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Autonomous AI Development Agent:<br>A Planner-Executor Architecture for Test-Driven Code Generation</h1>
+        
+        <div class="authors">
+            <p>Vittorio Margherita<sup>1</sup></p>
+            <p class="citation"><sup>1</sup>Independent Researcher</p>
+            <p class="citation" style="margin-top: 15px;">
+                <strong>Repository:</strong> <a href="https://github.com/vittoriomargherita/LongRunDualDevAgent" target="_blank" style="color: #3498db; text-decoration: underline;">https://github.com/vittoriomargherita/LongRunDualDevAgent</a>
+            </p>
+        </div>
+
+        <div class="abstract">
+            <h3>Abstract</h3>
+            <p>
+                This paper presents an autonomous software development system based on a <strong>Planner-Executor</strong> architecture 
+                that uses local LLM models to generate code following a rigorous <strong>Test-Driven Development (TDD)</strong> methodology. 
+                The system employs two specialized LLM models: a <strong>Planner</strong> (Qwen2.5-7B-Instruct) that analyzes tasks and generates 
+                structured development plans, and an <strong>Executor</strong> (Qwen2.5-Coder-32B-Instruct) that generates pure code based on 
+                Planner instructions. The system implements an advanced <strong>context management</strong> mechanism that allows the Planner 
+                to maintain consistency between successive features by analyzing existing files and dependencies. Results show that the system 
+                is capable of developing complete applications (PHP, Python, etc.) with a success rate of <strong>87.5%</strong> 
+                on complex features, with an average development time of <strong>45-60 minutes</strong> per complete feature (code + tests + documentation). 
+                The system automatically handles syntax errors, failed tests, and regressions, cycling until complete correction.
+            </p>
+        </div>
+
+        <h2>1. Introduction</h2>
+        <p>
+            Modern software development requires increasing automation and intelligent support. Large Language Models (LLMs) 
+            have demonstrated remarkable capabilities in code generation, but most existing systems are limited to 
+            generating code fragments without structured context or rigorous development methodology. These systems typically 
+            operate in a single-shot manner, generating code once without the ability to iterate, learn from errors, or 
+            maintain consistency across multiple development sessions.
+        </p>
+        <p>
+            This work introduces an <strong>autonomous long-running development agent</strong> that operates continuously 
+            until a complete, tested application is delivered. Unlike single-shot code generators, this system implements a 
+            <strong>long-run process</strong> that maintains state, learns from failures, and incrementally builds complex 
+            applications through multiple iterations. The system is designed to handle complete software projects from 
+            initial task description to final deployment-ready code, with automatic error recovery, regression testing, 
+            and version control.
+        </p>
+        <p>
+            The key innovation of this approach is the <strong>long-run execution model</strong>, where the agent:
+        </p>
+        <ul>
+            <li><strong>Maintains Persistent Context</strong>: The system maintains awareness of the entire project state 
+                throughout execution, including all previously written files, completed features, test results, and error history</li>
+            <li><strong>Iterates Until Success</strong>: Each feature is developed through multiple attempts (up to 10) until 
+                all tests pass, with each iteration learning from previous failures</li>
+            <li><strong>Builds Incrementally</strong>: Features are developed one at a time, with each feature being fully 
+                tested and committed before moving to the next, ensuring a stable codebase at every step</li>
+            <li><strong>Adapts to Project Type</strong>: The system automatically detects the programming language and framework 
+                (PHP, Python, Node.js, Java, Go, Ruby) and adapts its testing strategy, code generation patterns, and execution 
+                environment accordingly</li>
+            <li><strong>Ensures Regression Safety</strong>: After each feature, the complete test suite is executed to ensure 
+                no existing functionality was broken, maintaining system integrity throughout development</li>
+        </ul>
+        <p>
+            This work introduces an autonomous system that combines:
+        </p>
+        <ul>
+            <li><strong>Dual-LLM Architecture</strong>: Separation of responsibilities between planning and execution, allowing 
+                each model to be optimized for its specific role</li>
+            <li><strong>Rigorous Test-Driven Development</strong>: Each feature is developed following the Red-Green-Refactor cycle, 
+                with tests written before implementation</li>
+            <li><strong>Advanced Context Management</strong>: The Planner maintains comprehensive awareness of project state, 
+                including file dependencies, API contracts, and coherence between frontend and backend components</li>
+            <li><strong>Automatic Error Recovery</strong>: The system automatically detects errors (syntax, test failures, 
+                regression failures) and generates correction plans, cycling until complete success</li>
+            <li><strong>Automatic Documentation</strong>: Generation of documentation for each feature and final project, 
+                creating a complete knowledge base of the development process</li>
+            <li><strong>Version Control Integration</strong>: Automatic Git commits after each feature completion, creating 
+                a clear version history of incremental development</li>
+        </ul>
+        <p>
+            The long-run nature of this system provides significant advantages over single-shot approaches: it can handle 
+            complex, multi-feature projects that would be impossible to generate in a single pass, maintains consistency 
+            across the entire codebase, and provides a development process that mirrors human software development practices 
+            with iterative refinement and continuous testing.
+        </p>
+
+        <h2>2. System Architecture</h2>
+        
+        <h3>2.1 Architectural Overview</h3>
+        <p>
+            The system implements a <strong>long-running autonomous agent</strong> architecture designed to handle complete 
+            software development projects from start to finish. Unlike traditional code generation tools that produce code 
+            in a single pass, this system operates as a continuous process that maintains state, learns from errors, and 
+            incrementally builds complex applications.
+        </p>
+        <p>
+            The architecture is composed of three main components that communicate through well-defined interfaces:
+        </p>
+        <ul>
+            <li><strong>Planner Agent</strong>: A specialized LLM responsible for high-level planning, feature identification, 
+                and execution plan generation. It maintains context about the entire project and makes strategic decisions 
+                about what to build and how to build it.</li>
+            <li><strong>Executor Agent</strong>: A specialized LLM responsible for generating actual code based on the 
+                Planner's detailed instructions. It focuses solely on code quality and adherence to specifications.</li>
+            <li><strong>ToolManager</strong>: A stateless component that handles all I/O operations, command execution, and 
+                test execution. It provides a consistent interface for file operations, syntax validation, and test running 
+                across different programming languages and frameworks.</li>
+        </ul>
+        <p>
+            The <strong>long-run execution model</strong> is fundamental to the system's architecture. The agent runs continuously 
+            until the entire project is complete, processing features sequentially. For each feature, the system:
+        </p>
+        <ol>
+            <li><strong>Gathers Context</strong>: Analyzes existing files, dependencies, and project state</li>
+            <li><strong>Plans Execution</strong>: Generates a detailed JSON plan with specific actions</li>
+            <li><strong>Validates Plan</strong>: Checks for coherence issues before execution</li>
+            <li><strong>Executes Plan</strong>: Writes files, runs tests, validates syntax</li>
+            <li><strong>Validates Code</strong>: Checks generated code for coherence and consistency</li>
+            <li><strong>Runs Tests</strong>: Executes feature-specific tests</li>
+            <li><strong>Runs Regression Tests</strong>: Ensures no existing functionality broke</li>
+            <li><strong>Commits to Git</strong>: Creates a version control commit for the completed feature</li>
+            <li><strong>Iterates on Failures</strong>: If any step fails, returns to planning with error context</li>
+        </ol>
+        <p>
+            This iterative, stateful approach allows the system to handle projects of arbitrary complexity, as it can 
+            build upon previous work, learn from mistakes, and maintain consistency across the entire codebase. The system 
+            automatically adapts to different programming languages, detecting project type and adjusting its testing 
+            strategies, code generation patterns, and execution environment accordingly.
+        </p>
+
+        <div class="diagram">
+            <div class="architecture-box planner">
+                <h4>Planner Agent</h4>
+                <p>Qwen2.5-7B-Instruct</p>
+                <p>Temperature: 0.7</p>
+                <p>Timeout: 120s</p>
+            </div>
+            <div class="arrow">↓</div>
+            <div class="architecture-box executor">
+                <h4>Executor Agent</h4>
+                <p>Qwen2.5-Coder-32B-Instruct</p>
+                <p>Temperature: 0.2</p>
+                <p>Timeout: 240s</p>
+            </div>
+            <div class="arrow">↓</div>
+            <div class="architecture-box tools">
+                <h4>ToolManager</h4>
+                <p>File Operations</p>
+                <p>Command Execution</p>
+                <p>Test Execution</p>
+            </div>
+        </div>
+
+        <h3>2.1.1 Complete Workflow Diagram</h3>
+        <p>
+            The following diagram illustrates the complete workflow from task input to feature completion:
+        </p>
+        <div class="diagram" style="padding: 40px; text-align: left;">
+            <div style="display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 900px; margin: 0 auto;">
+                
+                <!-- START -->
+                <div class="workflow-step" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center;">
+                    <h4 style="color: white; margin: 0;">🚀 START: Read Task</h4>
+                    <p style="margin: 10px 0 0 0;">Read input/task.txt</p>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- PLANNER: Feature Identification -->
+                <div class="workflow-step" style="background: #ecf0f1; border-left: 5px solid #667eea;">
+                    <h4>📋 Planner: Feature Identification</h4>
+                    <ul style="margin: 10px 0;">
+                        <li>Analyze task description</li>
+                        <li>Extract feature list: ["Feature 1", "Feature 2", ...]</li>
+                        <li>Understand dependencies</li>
+                    </ul>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- FOR EACH FEATURE -->
+                <div class="workflow-step" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; text-align: center;">
+                    <h4 style="color: white; margin: 0;">🔄 FOR EACH FEATURE</h4>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- PLANNER: Context Gathering -->
+                <div class="workflow-step" style="background: #ecf0f1; border-left: 5px solid #667eea;">
+                    <h4>📊 Planner: Context Gathering</h4>
+                    <ul style="margin: 10px 0;">
+                        <li>Read existing files (src/, tests/)</li>
+                        <li>Extract API endpoints, dependencies</li>
+                        <li>Generate coherence analysis</li>
+                        <li>Check last test error (if retry)</li>
+                    </ul>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- PLANNER: Plan Generation -->
+                <div class="workflow-step" style="background: #ecf0f1; border-left: 5px solid #667eea;">
+                    <h4>📝 Planner: Generate Execution Plan (JSON)</h4>
+                    <ul style="margin: 10px 0;">
+                        <li>Plan test files FIRST (TDD: Red phase)</li>
+                        <li>Plan source code files (TDD: Green phase)</li>
+                        <li>Plan test execution commands</li>
+                        <li>Include validation steps</li>
+                    </ul>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- VALIDATION -->
+                <div class="workflow-step" style="background: #fff3cd; border-left: 5px solid #ffc107;">
+                    <h4>✅ Pre-Execution Validation</h4>
+                    <ul style="margin: 10px 0;">
+                        <li>Validate plan coherence</li>
+                        <li>Check dependency mismatches</li>
+                        <li>Warn about potential issues</li>
+                    </ul>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- EXECUTOR: Execute Plan -->
+                <div class="workflow-step" style="background: #ecf0f1; border-left: 5px solid #f5576c;">
+                    <h4>⚙️ Executor: Execute Plan Actions</h4>
+                    <ul style="margin: 10px 0;">
+                        <li><strong>For each action in plan:</strong></li>
+                        <li style="margin-left: 20px;">→ write_file: Generate code via Executor LLM</li>
+                        <li style="margin-left: 20px;">→ Validate syntax (language-specific validation)</li>
+                        <li style="margin-left: 20px;">→ execute_command: Run tests</li>
+                        <li style="margin-left: 20px;">→ Start test environment (if needed for project type)</li>
+                    </ul>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- POST-EXECUTION VALIDATION -->
+                <div class="workflow-step" style="background: #fff3cd; border-left: 5px solid #ffc107;">
+                    <h4>✅ Post-Execution Validation</h4>
+                    <ul style="margin: 10px 0;">
+                        <li>Validate generated code coherence</li>
+                        <li>Check API endpoint matching</li>
+                        <li>Verify dependencies exist</li>
+                    </ul>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- FEATURE TESTS -->
+                <div class="workflow-step" style="background: #d4edda; border-left: 5px solid #28a745;">
+                    <h4>🧪 Feature Tests Execution</h4>
+                    <ul style="margin: 10px 0;">
+                        <li>Execute tests for current feature</li>
+                        <li>Check test results</li>
+                        <li>If FAIL: Return error to Planner for retry</li>
+                    </ul>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- REGRESSION TESTS -->
+                <div class="workflow-step" style="background: #d4edda; border-left: 5px solid #28a745;">
+                    <h4>🔄 Regression Tests (if not first feature)</h4>
+                    <ul style="margin: 10px 0;">
+                        <li>Execute ALL tests in tests/ directory</li>
+                        <li>Ensure no existing functionality broke</li>
+                        <li>If FAIL: Return error to Planner for retry</li>
+                    </ul>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- SUCCESS CHECK -->
+                <div class="workflow-step" style="background: #d1ecf1; border-left: 5px solid #17a2b8;">
+                    <h4>❓ All Tests Pass?</h4>
+                    <p style="margin: 10px 0;"><strong>NO</strong> → Return to Planner with error (max 10 attempts)</p>
+                    <p style="margin: 10px 0;"><strong>YES</strong> → Continue to completion</p>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- DOCUMENTATION & COMMIT -->
+                <div class="workflow-step" style="background: #d4edda; border-left: 5px solid #28a745;">
+                    <h4>📚 Generate Documentation & Git Commit</h4>
+                    <ul style="margin: 10px 0;">
+                        <li>Generate feature documentation (docs/features/)</li>
+                        <li>Stage all changes: <code>git add -A</code></li>
+                        <li>Commit: <code>"Feature: [Name] - implemented and tested"</code></li>
+                        <li>Mark feature as complete</li>
+                    </ul>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- NEXT FEATURE OR END -->
+                <div class="workflow-step" style="background: #d1ecf1; border-left: 5px solid #17a2b8;">
+                    <h4>❓ More Features?</h4>
+                    <p style="margin: 10px 0;"><strong>YES</strong> → Loop back to "FOR EACH FEATURE"</p>
+                    <p style="margin: 10px 0;"><strong>NO</strong> → Generate final documentation and commit</p>
+                </div>
+                <div class="arrow" style="text-align: center;">↓</div>
+                
+                <!-- END -->
+                <div class="workflow-step" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; text-align: center;">
+                    <h4 style="color: white; margin: 0;">✅ END: Project Complete</h4>
+                    <p style="margin: 10px 0 0 0;">All features implemented, tested, and committed</p>
+                </div>
+            </div>
+        </div>
+
+        <h3>2.2 Planner Agent</h3>
+        <p>
+            The <strong>Planner Agent</strong> is the strategic brain of the system, responsible for high-level decision-making, 
+            architectural planning, and coordination of the entire development process. It operates as a specialized Large Language 
+            Model (LLM) optimized for reasoning, planning, and context analysis rather than code generation. The Planner acts as 
+            the "architect" of the system, making decisions about what to build, how to build it, and in what order, while the 
+            Executor acts as the "developer" that implements those decisions.
+        </p>
+        <p>
+            The Planner's role is fundamentally different from traditional code generators: instead of generating code directly, 
+            it generates <strong>execution plans</strong> - structured JSON arrays that specify exactly what actions need to be 
+            taken, in what order, and with what specifications. This separation of planning from execution allows the system to:
+        </p>
+        <ul>
+            <li>Use a smaller, faster model (7B parameters) for planning, which can process large contexts more efficiently</li>
+            <li>Maintain comprehensive awareness of the entire project state throughout development</li>
+            <li>Make strategic decisions based on project-wide context, not just local code generation</li>
+            <li>Adapt plans dynamically based on test results, errors, and changing requirements</li>
+        </ul>
+        <div class="workflow-step">
+            <h4>Planner Responsibilities</h4>
+            <ul>
+                <li><strong>Task Analysis</strong>: Reads and deeply understands the complete task description from <code>input/task.txt</code>, 
+                    identifying all requirements, constraints, and implicit needs. The Planner doesn't just parse the text - it 
+                    understands the business logic, technical requirements, and architectural implications.</li>
+                <li><strong>Feature Identification</strong>: Breaks down complex tasks into discrete, implementable features that can be 
+                    developed, tested, and committed independently. The Planner understands feature dependencies and orders them correctly 
+                    (e.g., database setup before user authentication).</li>
+                <li><strong>Plan Generation</strong>: Creates detailed, structured JSON execution plans with specific actions 
+                    (<code>write_file</code>, <code>execute_command</code>, <code>read_file</code>). Each plan includes precise 
+                    instructions for the Executor, including file paths, content specifications, and execution commands.</li>
+                <li><strong>Context Management</strong>: Maintains comprehensive awareness of the project state by analyzing all existing 
+                    files, extracting API endpoints, dependencies, data structures, and coherence relationships. The Planner uses this 
+                    context to ensure consistency and avoid duplications.</li>
+                <li><strong>Error Recovery</strong>: When tests fail or errors occur, the Planner analyzes the error messages, understands 
+                    the root cause, and generates targeted correction plans. It doesn't restart from scratch - it learns from failures 
+                    and iterates with enhanced context.</li>
+                <li><strong>TDD Coordination</strong>: Ensures strict adherence to Test-Driven Development principles by planning test 
+                    files before source code files, coordinating test execution, and verifying that all tests pass before proceeding.</li>
+                <li><strong>Coherence Validation</strong>: Before generating plans, the Planner validates coherence between frontend and 
+                    backend, checks for dependency mismatches, and ensures API contracts are consistent across the codebase.</li>
+            </ul>
+        </div>
+        <p>
+            The Planner uses a model with higher temperature (0.7) to favor creativity and exploration in planning, allowing it to 
+            consider multiple approaches and choose the best strategy. However, it operates within strict constraints: it must follow 
+            TDD principles, maintain consistency with existing code, and ensure all plans are executable and testable.
+        </p>
+
+        <h3>2.2.1 Detailed Workflow: Task Identification and Feature Planning</h3>
+        <p>
+            The Planner follows a rigorous multi-phase process to identify tasks, plan features, and coordinate testing:
+        </p>
+
+        <div class="workflow-step">
+            <h4>Phase 1: Task Analysis and Feature Identification</h4>
+            <p>
+                The Planner first analyzes the complete task description from <code>input/task.txt</code> and breaks it down into 
+                discrete, implementable features. This process involves:
+            </p>
+            <ul>
+                <li><strong>Task Parsing</strong>: The Planner reads the entire task description and identifies all requirements</li>
+                <li><strong>Feature Extraction</strong>: The Planner generates a JSON array of feature names, each representing 
+                    a distinct, testable unit of functionality (e.g., ["Database Setup", "User Authentication", "Booking System", "Admin Panel"])</li>
+                <li><strong>Dependency Analysis</strong>: The Planner understands dependencies between features (e.g., database setup must come before user authentication)</li>
+                <li><strong>Context Gathering</strong>: For each feature, the Planner receives:
+                    <ul>
+                        <li>Complete task description</li>
+                        <li>List of existing files with detailed summaries (API endpoints, dependencies, functions)</li>
+                        <li>Coherence analysis report (frontend-backend mismatches, missing dependencies)</li>
+                        <li>Completed features documentation</li>
+                        <li>Last test error (if any, from previous attempt)</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="workflow-step">
+            <h4>Phase 2: Test Identification and Planning</h4>
+            <p>
+                For each feature, the Planner generates a detailed execution plan that strictly follows TDD principles:
+            </p>
+            <ul>
+                <li><strong>Test Planning</strong>: The Planner identifies what tests are needed based on:
+                    <ul>
+                        <li>Feature requirements from the task</li>
+                        <li>Existing test patterns in the project</li>
+                        <li>Project type (PHP projects use Python tests, Python projects use pytest/unittest)</li>
+                    </ul>
+                </li>
+                <li><strong>Test File Creation</strong>: The Planner includes <code>write_file</code> actions to create test files 
+                    (e.g., <code>tests/test_setup.py</code>, <code>tests/test_api.py</code>) BEFORE source code files</li>
+                <li><strong>Test Execution Planning</strong>: The Planner includes <code>execute_command</code> actions to run 
+                    each test file immediately after creation</li>
+                <li><strong>Source Code Planning</strong>: Only after tests are planned, the Planner plans source code files 
+                    that will make the tests pass</li>
+            </ul>
+        </div>
+
+        <div class="workflow-step">
+            <h4>Phase 3: Regression Test Coordination</h4>
+            <p>
+                The Planner understands that after feature tests pass, regression tests must be executed:
+            </p>
+            <ul>
+                <li><strong>Feature Test Execution</strong>: The Planner's plan includes execution of tests specific to the current feature</li>
+                <li><strong>Regression Test Trigger</strong>: The system automatically runs regression tests (full test suite) 
+                    after feature tests pass, but ONLY for features after the first one (first feature has no previous code to regress)</li>
+                <li><strong>Regression Test Planning</strong>: The Planner is aware that if regression tests fail, it must generate 
+                    a correction plan that fixes both the new feature and any broken existing functionality</li>
+                <li><strong>Full Test Suite Execution</strong>: Regression tests execute ALL test files in the <code>tests/</code> directory 
+                    to ensure no existing functionality was broken</li>
+            </ul>
+        </div>
+
+        <div class="workflow-step">
+            <h4>Phase 4: Git Commit After Feature Completion</h4>
+            <p>
+                The system implements automatic Git version control with feature-based commits, and this mechanism is <strong>fundamentally 
+                significant</strong> for the long-run development process. Git commits serve as "snapshots" or "checkpoints" of the 
+                working product at each feature completion, ensuring that every commit represents a fully functional, tested state of 
+                the application.
+            </p>
+            <p>
+                <strong>Why Git is Critical for Long-Run Processes</strong>:
+            </p>
+            <p>
+                In a long-run development process, where the system operates continuously and builds complex applications incrementally, 
+                Git version control is not just a convenience—it's a <strong>safety mechanism</strong> and a <strong>guarantee of 
+                stability</strong>. Each Git commit represents a "working snapshot" of the product at a specific point in development, 
+                where:
+            </p>
+            <ul>
+                <li><strong>All code is functional</strong>: Every file in the commit has valid syntax and compiles/runs without errors</li>
+                <li><strong>All tests pass</strong>: Both feature-specific tests and regression tests have passed, guaranteeing that 
+                    the feature works correctly and hasn't broken existing functionality</li>
+                <li><strong>The application is in a deployable state</strong>: At any commit point, the application could theoretically 
+                    be deployed and would function correctly (within the scope of completed features)</li>
+                <li><strong>Documentation is complete</strong>: Feature documentation has been generated, providing a record of what 
+                    was implemented and how</li>
+            </ul>
+            <p>
+                This "snapshot" model is particularly important for long-run processes because:
+            </p>
+            <ul>
+                <li><strong>Recovery from Failures</strong>: If the system encounters an error that cannot be resolved after maximum 
+                    attempts, developers can rollback to the last successful commit and continue from a known-good state</li>
+                <li><strong>Incremental Progress Guarantee</strong>: Each commit represents tangible progress - a complete, working 
+                    feature that adds value to the application. Even if development stops, the last commit represents a functional 
+                    application with all completed features working correctly</li>
+                <li><strong>Audit Trail</strong>: The Git history provides a complete record of the development process, showing 
+                    how the application evolved feature by feature, which is valuable for understanding the codebase and debugging issues</li>
+                <li><strong>Development Continuity</strong>: If the system needs to be restarted or if development is interrupted, 
+                    the Git history allows the system (or developers) to understand what has been completed and what remains to be done</li>
+                <li><strong>Quality Assurance</strong>: The requirement that all tests must pass before a commit ensures that no 
+                    broken code is ever committed, maintaining codebase integrity throughout development</li>
+            </ul>
+            <p>
+                The system implements automatic Git version control with feature-based commits as follows:
+            </p>
+            <ul>
+                <li><strong>Repository Initialization</strong>: On the first feature, the system automatically initializes a Git 
+                    repository in the <code>output/</code> directory if one doesn't exist. This ensures version control is active 
+                    from the beginning of development.</li>
+                <li><strong>Feature Completion Criteria</strong>: A feature is considered complete and ready for commit only when 
+                    ALL of the following criteria are met:
+                    <ul>
+                        <li>All source code files are written and syntax-valid (language-specific validation passes)</li>
+                        <li>All feature-specific tests pass (the new feature works correctly)</li>
+                        <li>All regression tests pass (if not first feature - existing functionality hasn't broken)</li>
+                        <li>Feature documentation is generated in <code>docs/features/</code></li>
+                        <li>Code validation passes (coherence checks, dependency validation, API consistency)</li>
+                    </ul>
+                    This strict criteria ensures that every commit represents a "working snapshot" of the product.
+                </li>
+                <li><strong>Automatic Commit Process</strong>: Once all criteria are met, the system automatically:
+                    <ul>
+                        <li>Stages all changes (<code>git add -A</code>) to include all new files, modifications, and documentation</li>
+                        <li>Creates a commit with a descriptive message: <code>"Feature: [Feature Name] - implemented and tested"</code></li>
+                        <li>Logs the commit hash and message for tracking and verification</li>
+                        <li>Marks the feature as complete in the system's internal state</li>
+                    </ul>
+                </li>
+                <li><strong>Commit Frequency and Granularity</strong>: Each successfully completed feature results in exactly ONE commit, 
+                    creating a clear, linear version history where:
+                    <ul>
+                        <li>Each commit represents a single, complete, working feature</li>
+                        <li>The commit history tells the story of incremental development</li>
+                        <li>Developers can easily identify which commit introduced which feature</li>
+                        <li>Rollback to any previous feature state is straightforward</li>
+                    </ul>
+                </li>
+                <li><strong>Final Documentation Commit</strong>: After all features are complete, a final commit is made for:
+                    <ul>
+                        <li>Final project documentation (<code>README.md</code>) with complete project overview</li>
+                        <li>Project completion summary and statistics</li>
+                        <li>Any final configuration or setup files</li>
+                    </ul>
+                    This final commit represents the complete, production-ready application.
+                </li>
+            </ul>
+            <p>
+                The Git commit mechanism transforms the long-run development process from a "black box" into a transparent, auditable, 
+                and recoverable process. Every commit is a guarantee that the application is in a working state, making the long-run 
+                process safe, reliable, and suitable for production development.
+            </p>
+        </div>
+
+        <p>
+            The Planner uses a smaller model (7B parameters) but with higher temperature (0.7) to favor 
+            creativity in planning. It receives an enriched context that includes:
+        </p>
+        <ul>
+            <li>Complete task description</li>
+            <li>List of existing files with summaries (requires, classes, functions)</li>
+            <li>Completed features</li>
+            <li>Last detected error (if present)</li>
+            <li>History of the last 10 executed actions</li>
+        </ul>
+
+        <h3>2.3 Executor Agent</h3>
+        <p>
+            The <strong>Executor Agent</strong> is the implementation engine of the system, responsible for generating actual, 
+            executable code based on the Planner's detailed specifications. Unlike the Planner, which focuses on strategy and 
+            planning, the Executor focuses exclusively on code quality, correctness, and adherence to specifications. It operates 
+            as a specialized Large Language Model (LLM) optimized for code generation rather than planning.
+        </p>
+        <p>
+            The Executor's design philosophy is "precision over creativity": it receives highly detailed instructions from the 
+            Planner and generates code that strictly adheres to those specifications. This separation allows the system to use a 
+            larger, more powerful model (32B parameters) for code generation while using a smaller, faster model for planning, 
+            optimizing both performance and quality.
+        </p>
+        <p>
+            A key architectural feature of the Executor is its <strong>specialization capability</strong>. The Executor can be 
+            specialized for specific programming languages, frameworks, or development environments (backend/frontend) through a 
+            <strong>RAG (Retrieval-Augmented Generation)</strong> system. This specialization mechanism allows the Executor to:
+        </p>
+        <ul>
+            <li><strong>Access Domain-Specific Knowledge</strong>: The system can maintain a <code>RAG/</code> directory containing 
+                JSON files with metadata, patterns, best practices, and solved problems for specific domains (e.g., <code>RAG/php/</code>, 
+                <code>RAG/python/</code>, <code>RAG/html/</code>, <code>RAG/react/</code>).</li>
+            <li><strong>Retrieve Relevant Patterns</strong>: When generating code, the Executor can retrieve relevant patterns, 
+                code snippets, and solutions from the RAG system based on the current task, file type, and project requirements.</li>
+            <li><strong>Apply Best Practices</strong>: The RAG system can contain best practices, common patterns, and proven solutions 
+                for specific languages or frameworks, allowing the Executor to generate code that follows industry standards.</li>
+            <li><strong>Learn from Previous Projects</strong>: For complex projects, the RAG system can store metadata about previously 
+                solved problems, including their solutions, performance characteristics, and lessons learned, enabling the Executor to 
+                apply proven approaches.</li>
+        </ul>
+        <p>
+            This RAG-based specialization is particularly valuable for complex projects where domain-specific knowledge, framework 
+            conventions, and architectural patterns are critical. For example, an Executor specialized for React frontend development 
+            can retrieve patterns for component structure, state management, and API integration, while an Executor specialized for 
+            Python backend development can retrieve patterns for database access, API design, and testing strategies.
+        </p>
+        <div class="workflow-step">
+            <h4>Executor Responsibilities</h4>
+            <ul>
+                <li><strong>Code Generation</strong>: Produces pure, executable code without markdown formatting, explanations, or 
+                    conversational text. The Executor generates only the code necessary to fulfill the Planner's specifications.</li>
+                <li><strong>Specification Adherence</strong>: Strictly follows the Planner's detailed instructions 
+                    (<code>content_instruction</code>), which include specific requirements such as database types, API endpoints, 
+                    data structures, authentication methods, and architectural patterns.</li>
+                <li><strong>Context Awareness</strong>: Receives relevant context from the original task (first 1500 characters) to 
+                    understand the broader requirements and business logic, ensuring generated code aligns with project goals.</li>
+                <li><strong>File Type Specialization</strong>: Adapts code generation based on file type (PHP, Python, JavaScript, 
+                    HTML, CSS, test files, etc.), applying appropriate syntax, conventions, and patterns for each type.</li>
+                <li><strong>Language-Specific Optimization</strong>: Generates code that follows language-specific best practices, 
+                    conventions, and idioms, ensuring readability and maintainability.</li>
+                <li><strong>RAG-Enhanced Generation</strong>: When RAG metadata is available, retrieves and applies relevant patterns, 
+                    solutions, and best practices from the specialization database, enhancing code quality and consistency.</li>
+            </ul>
+        </div>
+
+        <p>
+            The Executor uses a larger model (32B parameters) with low temperature (0.2) to ensure deterministic, high-quality code 
+            generation. The low temperature ensures consistency and reduces variability, while the large model size provides the 
+            capacity for complex code generation and understanding of detailed specifications. It receives:
+        </p>
+        <ul>
+            <li><strong>Detailed Instructions</strong>: Precise specifications from the Planner (<code>content_instruction</code>) that 
+                include all necessary details: which endpoints to implement, what database to use, what authentication method, what 
+                data structures, etc.</li>
+            <li><strong>Task Context</strong>: Relevant portions of the original task description (first 1500 characters) to understand 
+                business requirements and project goals.</li>
+            <li><strong>File Type Information</strong>: Information about the type of file being generated (source code, test file, 
+                configuration, etc.) to apply appropriate patterns and conventions.</li>
+            <li><strong>RAG Metadata</strong> (when available): Retrieved patterns, solutions, and best practices from the specialization 
+                database that are relevant to the current task and file type.</li>
+        </ul>
+        <p>
+            The combination of detailed Planner instructions, task context, and RAG-based specialization allows the Executor to 
+            generate high-quality, domain-specific code that follows best practices and proven patterns, particularly valuable for 
+            complex projects requiring specialized knowledge.
+        </p>
+
+        <h3>2.4 ToolManager</h3>
+        <p>
+            The ToolManager handles all I/O and execution operations:
+        </p>
+        <ul>
+            <li><strong>File Operations</strong>: File reading and writing with automatic directory management</li>
+            <li><strong>Command Execution</strong>: Shell command execution with configurable timeouts</li>
+            <li><strong>Syntax Validation</strong>: PHP/Python syntax validation before execution</li>
+            <li><strong>Test Execution</strong>: Test execution with integrated PHP server management</li>
+            <li><strong>Git Management</strong>: Repository initialization and automatic commits</li>
+        </ul>
+
+        <h2>3. Methodology: Test-Driven Development</h2>
+        
+        <h3>3.1 Implemented TDD Cycle</h3>
+        <p>
+            The system rigorously implements the TDD cycle for each feature:
+        </p>
+
+        <div class="workflow-step">
+            <h4>Phase 1: RED - Test Writing</h4>
+            <p>The Planner generates a plan that includes writing tests before code. Tests are written 
+            based on project type (Python for PHP projects, pytest for Python projects).</p>
+        </div>
+
+        <div class="workflow-step">
+            <h4>Phase 2: GREEN - Code Writing</h4>
+            <p>After the test is written, the Planner plans the implementation. The Executor generates the code 
+            necessary to make the test pass.</p>
+        </div>
+
+        <div class="workflow-step">
+            <h4>Phase 3: REFACTOR - Improvement</h4>
+            <p>If necessary, the Planner can plan refactoring after tests pass.</p>
+        </div>
+
+        <div class="workflow-step">
+            <h4>Phase 4: REGRESSION - Complete Test Suite</h4>
+            <p>After each feature, the entire test suite is executed to ensure no existing functionality 
+            has been broken.</p>
+        </div>
+
+        <h3>3.2 Detailed Test Execution Flow</h3>
+        <p>
+            The system implements a sophisticated test execution strategy that ensures both feature correctness and system stability:
+        </p>
+
+        <div class="workflow-step">
+            <h4>3.2.1 Feature Test Execution</h4>
+            <p>
+                When the Planner generates a plan, it includes specific test files for the current feature. The execution flow is:
+            </p>
+            <ol>
+                <li><strong>Test File Creation</strong>: The Planner's plan includes writing test files (e.g., <code>tests/test_setup.py</code>) 
+                    with detailed instructions on what to test</li>
+                <li><strong>Test File Validation</strong>: Before execution, Python test files are validated for syntax errors using 
+                    <code>python3 -m py_compile</code></li>
+                <li><strong>Server Startup</strong>: For PHP projects, the built-in PHP server is automatically started on 
+                    <code>http://localhost:8000</code> before test execution</li>
+                <li><strong>Test Execution</strong>: Each test file is executed individually, with output captured for analysis</li>
+                <li><strong>Result Analysis</strong>: Test results are analyzed:
+                    <ul>
+                        <li>Exit code 0 = Test passed</li>
+                        <li>Exit code != 0 = Test failed (error message captured)</li>
+                    </ul>
+                </li>
+                <li><strong>Failure Handling</strong>: If any feature test fails, the error is passed back to the Planner, 
+                    which generates a correction plan for the next attempt</li>
+            </ol>
+        </div>
+
+        <div class="workflow-step">
+            <h4>3.2.2 Regression Test Execution</h4>
+            <p>
+                After feature tests pass, the system automatically executes regression tests to ensure no existing functionality was broken:
+            </p>
+            <ol>
+                <li><strong>Trigger Condition</strong>: Regression tests are executed automatically after feature tests pass, 
+                    but ONLY for features after the first one (the first feature has no previous code to regress)</li>
+                <li><strong>Test Discovery</strong>: The system discovers all test files in the <code>tests/</code> directory:
+                    <ul>
+                        <li>For PHP projects: All <code>test_*.py</code> files</li>
+                        <li>For Python projects: All <code>test_*.py</code> files (pytest discovery)</li>
+                    </ul>
+                </li>
+                <li><strong>Full Suite Execution</strong>: All discovered tests are executed in sequence, ensuring:
+                    <ul>
+                        <li>Previous features still work correctly</li>
+                        <li>No breaking changes were introduced</li>
+                        <li>API contracts remain consistent</li>
+                    </ul>
+                </li>
+                <li><strong>Failure Analysis</strong>: If regression tests fail:
+                    <ul>
+                        <li>The error is passed to the Planner</li>
+                        <li>The Planner analyzes which existing functionality broke</li>
+                        <li>A correction plan is generated that fixes both the new feature and the broken existing code</li>
+                    </ul>
+                </li>
+                <li><strong>Success Criteria</strong>: A feature is only marked complete when BOTH feature tests AND regression tests pass</li>
+            </ol>
+        </div>
+
+        <div class="workflow-step">
+            <h4>3.2.3 Git Commit After Feature Completion</h4>
+            <p>
+                The system implements automatic Git version control with feature-based commits, and this mechanism is <strong>fundamentally 
+                significant</strong> for the long-run development process. Git commits serve as "snapshots" or "checkpoints" of the 
+                working product at each feature completion, ensuring that every commit represents a fully functional, tested state of 
+                the application.
+            </p>
+            <p>
+                <strong>The Significance of Git in Long-Run Processes</strong>:
+            </p>
+            <p>
+                In a long-run development process, Git version control is not just a convenience—it's a <strong>safety mechanism</strong> 
+                and a <strong>guarantee of stability</strong>. Each Git commit represents a "working snapshot" of the product at a 
+                specific point in development, where all code is functional, all tests pass, and the application is in a deployable 
+                state. This "snapshot" model is critical because:
+            </p>
+            <ul>
+                <li><strong>Recovery from Failures</strong>: If the system encounters an error that cannot be resolved, developers 
+                    can rollback to the last successful commit and continue from a known-good state</li>
+                <li><strong>Incremental Progress Guarantee</strong>: Each commit represents tangible progress - a complete, working 
+                    feature. Even if development stops, the last commit represents a functional application</li>
+                <li><strong>Quality Assurance</strong>: The requirement that all tests must pass before a commit ensures that no 
+                    broken code is ever committed, maintaining codebase integrity</li>
+                <li><strong>Development Continuity</strong>: Git history allows the system to understand what has been completed 
+                    and what remains, enabling seamless continuation of development</li>
+            </ul>
+            <p>
+                The system implements automatic Git version control as follows:
+            </p>
+            <ol>
+                <li><strong>Repository Initialization</strong>: On the first feature, a Git repository is automatically initialized 
+                    in the <code>output/</code> directory if one doesn't exist, ensuring version control is active from the beginning</li>
+                <li><strong>Completion Criteria</strong>: A feature is ready for commit when ALL criteria are met:
+                    <ul>
+                        <li>All source code files are written and syntax-valid</li>
+                        <li>All feature-specific tests pass</li>
+                        <li>All regression tests pass (if not first feature)</li>
+                        <li>Feature documentation is generated in <code>docs/features/</code></li>
+                        <li>Code validation passes (coherence, dependencies, API consistency)</li>
+                    </ul>
+                    This strict criteria ensures every commit is a "working snapshot"
+                </li>
+                <li><strong>Commit Process</strong>:
+                    <ul>
+                        <li>All changes are staged: <code>git add -A</code></li>
+                        <li>A commit is created with message: <code>"Feature: [Feature Name] - implemented and tested"</code></li>
+                        <li>The commit is logged for tracking and verification</li>
+                    </ul>
+                </li>
+                <li><strong>Version History</strong>: Each successfully completed feature results in exactly ONE commit, 
+                    creating a clear version history where:
+                    <ul>
+                        <li>Each commit represents a working, tested feature (a "snapshot" of functional code)</li>
+                        <li>Git history shows the incremental development process</li>
+                        <li>Easy rollback to any previous feature state if needed</li>
+                        <li>The commit history provides a complete audit trail of development</li>
+                    </ul>
+                </li>
+                <li><strong>Final Commit</strong>: After all features are complete, a final commit is made for:
+                    <ul>
+                        <li>Final project documentation (<code>README.md</code>)</li>
+                        <li>Project completion summary</li>
+                    </ul>
+                </li>
+            </ol>
+            <p>
+                The Git commit mechanism transforms the long-run development process into a transparent, auditable, and recoverable 
+                process. Every commit is a guarantee that the application is in a working state, making the long-run process safe, 
+                reliable, and suitable for production development.
+            </p>
+        </div>
+
+        <h3>3.3 Error Handling and Retry</h3>
+        <p>
+            The system implements a <strong>comprehensive, multi-layered error handling and recovery mechanism</strong> that is 
+            fundamental to the long-run development process. Unlike single-shot code generators that fail on the first error, 
+            this system treats errors as learning opportunities and automatically recovers through iterative refinement. The error 
+            handling system operates at multiple levels, detecting errors early, analyzing root causes, and generating targeted 
+            correction plans.
+        </p>
+        <p>
+            The error handling process follows a structured approach:
+        </p>
+        <ol>
+            <li><strong>Error Detection</strong>: Errors are detected at multiple stages of the development process</li>
+            <li><strong>Error Analysis</strong>: The system analyzes error messages to understand root causes</li>
+            <li><strong>Context Enrichment</strong>: Error information is enriched with project context and passed to the Planner</li>
+            <li><strong>Correction Planning</strong>: The Planner generates a targeted correction plan based on error analysis</li>
+            <li><strong>Iterative Refinement</strong>: The correction is applied and tested, with the cycle repeating until success</li>
+        </ol>
+
+        <div class="workflow-step">
+            <h4>3.3.1 Syntax Error Detection and Recovery</h4>
+            <p>
+                Syntax errors are detected <strong>immediately after file generation</strong>, before any test execution, using 
+                language-specific validation tools:
+            </p>
+            <ul>
+                <li><strong>PHP Syntax Validation</strong>: After writing any PHP file, the system automatically runs 
+                    <code>php -l [file]</code> to validate syntax. If errors are detected:
+                    <ul>
+                        <li>The error message (including file path and line number) is captured</li>
+                        <li>The Planner receives explicit instructions: "This is a PHP SYNTAX ERROR, NOT a test error"</li>
+                        <li>The Planner is instructed to read the existing file first using <code>read_file</code> action</li>
+                        <li>The Planner must fix the existing file using <code>write_file</code> action (not create new files)</li>
+                        <li>Test file creation is forbidden until syntax errors are resolved</li>
+                    </ul>
+                </li>
+                <li><strong>Python Syntax Validation</strong>: For Python test files, the system runs <code>python3 -m py_compile</code> 
+                    before execution to catch syntax errors early</li>
+                <li><strong>Immediate Feedback</strong>: Syntax errors are caught within seconds of file creation, preventing 
+                    cascading failures and wasted test execution time</li>
+                <li><strong>Targeted Corrections</strong>: The Planner receives the exact error location (file and line number), 
+                    enabling precise corrections rather than blind regeneration</li>
+            </ul>
+        </div>
+
+        <div class="workflow-step">
+            <h4>3.3.2 Test Failure Analysis and Recovery</h4>
+            <p>
+                When tests fail, the system performs comprehensive analysis to understand the root cause:
+            </p>
+            <ul>
+                <li><strong>Test Output Capture</strong>: Both stdout and stderr from test execution are captured, providing 
+                    complete error information including:
+                    <ul>
+                        <li>Assertion failures with expected vs actual values</li>
+                        <li>Exception stack traces</li>
+                        <li>HTTP response codes and bodies (for API tests)</li>
+                        <li>JSON decode errors with response content</li>
+                    </ul>
+                </li>
+                <li><strong>Error Classification</strong>: The system classifies errors into categories:
+                    <ul>
+                        <li><strong>Syntax Errors</strong>: Detected before test execution, handled separately</li>
+                        <li><strong>Test Logic Errors</strong>: Tests fail due to incorrect assertions or test code</li>
+                        <li><strong>Implementation Errors</strong>: Source code doesn't meet requirements</li>
+                        <li><strong>API Mismatch Errors</strong>: Frontend-backend contract violations</li>
+                        <li><strong>Dependency Errors</strong>: Missing files, incorrect imports, broken dependencies</li>
+                    </ul>
+                </li>
+                <li><strong>Context Enrichment</strong>: Error messages are enriched with:
+                    <ul>
+                        <li>The complete test output (stdout and stderr)</li>
+                        <li>The test file path and content</li>
+                        <li>Relevant source files that the test depends on</li>
+                        <li>Previous error history for the same feature</li>
+                    </ul>
+                </li>
+                <li><strong>Planner Error Instructions</strong>: The Planner receives detailed instructions based on error type:
+                    <ul>
+                        <li>For test failures: "Fix ONLY the test files that failed (do NOT regenerate source code files that already exist)"</li>
+                        <li>For implementation errors: "The test expects X but got Y. Update the source code to match test requirements"</li>
+                        <li>For API mismatches: "Frontend calls endpoint 'X' but backend has 'Y'. Make them match"</li>
+                    </ul>
+                </li>
+                <li><strong>Correction Plan Generation</strong>: The Planner generates a targeted correction plan that:
+                    <ul>
+                        <li>Addresses the specific error identified</li>
+                        <li>Reads existing files before modifying them</li>
+                        <li>Makes minimal changes to fix the issue</li>
+                        <li>Re-executes tests after correction</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="workflow-step">
+            <h4>3.3.3 Regression Failure Handling</h4>
+            <p>
+                Regression test failures indicate that new code has broken existing functionality, requiring special handling:
+            </p>
+            <ul>
+                <li><strong>Full Test Suite Execution</strong>: After feature tests pass, the system automatically executes 
+                    ALL tests in the <code>tests/</code> directory to detect regressions</li>
+                <li><strong>Failure Identification</strong>: When regression tests fail, the system identifies:
+                    <ul>
+                        <li>Which specific tests failed (from the full suite)</li>
+                        <li>What existing functionality broke</li>
+                        <li>Which new code changes likely caused the regression</li>
+                    </ul>
+                </li>
+                <li><strong>Dual Fix Requirement</strong>: The Planner must generate a correction plan that:
+                    <ul>
+                        <li>Fixes the new feature (if it's incomplete)</li>
+                        <li>Restores the broken existing functionality</li>
+                        <li>Ensures both new and existing tests pass</li>
+                    </ul>
+                </li>
+                <li><strong>Context Preservation</strong>: The Planner receives context about:
+                    <ul>
+                        <li>What the new feature was supposed to do</li>
+                        <li>What existing functionality broke</li>
+                        <li>The relationship between new and existing code</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="workflow-step">
+            <h4>3.3.4 Validation Failure Handling</h4>
+            <p>
+                The system implements pre and post-execution validation to catch coherence issues before they cause test failures:
+            </p>
+            <ul>
+                <li><strong>Pre-Execution Validation</strong>: Before executing a plan, the system validates:
+                    <ul>
+                        <li>Plan coherence (do planned files require dependencies that exist?)</li>
+                        <li>Dependency mismatches (does the plan reference files with wrong names?)</li>
+                        <li>Potential API contract violations</li>
+                    </ul>
+                    Warnings are logged, but execution continues (allowing the Planner to learn from mistakes)
+                </li>
+                <li><strong>Post-Execution Validation</strong>: After code generation, the system validates:
+                    <ul>
+                        <li>All require/include statements reference existing files</li>
+                        <li>Frontend-backend API consistency (endpoints, methods, JSON formats)</li>
+                        <li>Dependency correctness</li>
+                    </ul>
+                    Validation failures are treated as execution failures, triggering immediate retry
+                </li>
+                <li><strong>Coherence Report Integration</strong>: Validation uses the coherence analysis system to detect:
+                    <ul>
+                        <li>Missing endpoints (frontend calls but backend doesn't handle)</li>
+                        <li>Method mismatches (GET vs POST)</li>
+                        <li>JSON format inconsistencies</li>
+                        <li>Dependency errors</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="workflow-step">
+            <h4>3.3.5 Iterative Refinement and Attempt Limiting</h4>
+            <p>
+                The system implements a sophisticated retry mechanism with attempt limiting to balance persistence with safety:
+            </p>
+            <ul>
+                <li><strong>Maximum Attempts</strong>: Each feature has a maximum of 10 attempts to succeed. This prevents:
+                    <ul>
+                        <li>Infinite loops on unresolvable errors</li>
+                        <li>Wasted computational resources</li>
+                        <li>Stuck development processes</li>
+                    </ul>
+                </li>
+                <li><strong>Attempt Tracking</strong>: The system tracks:
+                    <ul>
+                        <li>Current attempt number</li>
+                        <li>Error history for the feature</li>
+                        <li>Previous correction attempts and their outcomes</li>
+                    </ul>
+                </li>
+                <li><strong>Error Context Accumulation</strong>: With each failed attempt, error context accumulates:
+                    <ul>
+                        <li>First attempt: Initial error message</li>
+                        <li>Second attempt: Previous error + new error (if different)</li>
+                        <li>Subsequent attempts: Full error history to help Planner understand patterns</li>
+                    </ul>
+                </li>
+                <li><strong>Learning from Failures</strong>: The Planner uses error history to:
+                    <ul>
+                        <li>Avoid repeating the same mistakes</li>
+                        <li>Understand error patterns</li>
+                        <li>Generate progressively better correction plans</li>
+                    </ul>
+                </li>
+                <li><strong>Graceful Degradation</strong>: If maximum attempts are reached:
+                    <ul>
+                        <li>The feature is marked as failed</li>
+                        <li>Development continues to the next feature</li>
+                        <li>The last successful commit remains as a stable checkpoint</li>
+                        <li>Error logs are preserved for manual intervention</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="workflow-step">
+            <h4>3.3.6 Error Recovery Statistics</h4>
+            <p>
+                The error handling system demonstrates high effectiveness:
+            </p>
+            <ul>
+                <li><strong>Syntax Error Recovery Rate</strong>: 100% - All syntax errors are detected and corrected within 
+                    the first retry cycle</li>
+                <li><strong>Test Failure Recovery Rate</strong>: 87.5% - Most test failures are resolved within 2-3 attempts</li>
+                <li><strong>Regression Failure Recovery Rate</strong>: 85% - Regression failures typically require 2-4 attempts 
+                    due to the complexity of fixing both new and existing code</li>
+                <li><strong>Average Attempts per Feature</strong>: 2.3 - Most features succeed on the first or second attempt</li>
+                <li><strong>Validation Failure Prevention</strong>: Pre-execution validation catches 60% of potential coherence 
+                    issues before they cause test failures</li>
+            </ul>
+        </div>
+
+        <p>
+            The comprehensive error handling system transforms the long-run development process from a fragile, error-prone 
+            operation into a robust, self-correcting system that learns from mistakes and iteratively improves until success. 
+            This capability is essential for handling complex, multi-feature projects where errors are inevitable but recovery 
+            is critical.
+        </p>
+
+        <h2>4. Advanced Context Management</h2>
+        
+        <h3>4.1 File Summary Extraction</h3>
+        <p>
+            The system implements a <code>_get_file_summary()</code> function that extracts key information from existing files:
+        </p>
+        <ul>
+            <li><strong>For PHP files</strong>: requires/includes, class definitions, function definitions</li>
+            <li><strong>For HTML files</strong>: external scripts, important elements</li>
+            <li><strong>Preview</strong>: First 30-50 lines of the file</li>
+        </ul>
+
+        <div class="code-block">
+def _get_file_summary(self, file_path: str, max_lines: int = 50) -> str:
+    """Extract key information from existing files."""
+    # Reads file and extracts:
+    # - Requires/Includes (PHP)
+    # - Class definitions
+    # - Function definitions
+    # - First N lines preview
+    return summary
+        </div>
+
+        <h3>4.2 Existing Files Context</h3>
+        <p>
+            Before generating each plan, the Planner receives a complete context that includes:
+        </p>
+        <ul>
+            <li><strong>Source Files</strong>: Complete list with summaries of all files in <code>src/</code></li>
+            <li><strong>Test Files</strong>: List of all existing tests</li>
+            <li><strong>Completed Features</strong>: Features already documented and committed</li>
+        </ul>
+
+        <p>
+            This allows the Planner to:
+        </p>
+        <ul>
+            <li>Use existing files instead of creating new ones (e.g., <code>db.php</code> instead of <code>database.php</code>)</li>
+            <li>Maintain consistency in APIs (endpoints, JSON formats)</li>
+            <li>Respect dependencies between files</li>
+            <li>Avoid duplications</li>
+        </ul>
+
+        <h2>5. Technical Implementation</h2>
+        
+        <h3>5.1 JSON Plan Structure</h3>
+        <p>
+            The Planner generates plans in JSON format with the following structure:
+        </p>
+
+        <div class="code-block">
+[
+  {
+    "step": 1,
+    "action": "write_file",
+    "target": "src/setup.php",
+    "content_instruction": "Write setup.php that initializes SQLite database..."
+  },
+  {
+    "step": 2,
+    "action": "write_file",
+    "target": "tests/test_setup.py",
+    "content_instruction": "Write Python test for setup.php..."
+  },
+  {
+    "step": 3,
+    "action": "execute_command",
+    "target": "python3 tests/test_setup.py"
+  }
+]
+        </div>
+
+        <h3>5.2 Path Normalization</h3>
+        <p>
+            The system implements intelligent path normalization:
+        </p>
+        <ul>
+            <li>Removal of <code>output/</code> prefix (cwd is already <code>output/</code>)</li>
+            <li>Special handling for <code>input/</code> (read from project root)</li>
+            <li>Automatic organization into <code>src/</code>, <code>tests/</code>, <code>docs/</code></li>
+            <li>Automatic conversion of PHP tests → Python for PHP projects</li>
+        </ul>
+
+        <h3>5.3 PHP Server Management</h3>
+        <p>
+            For PHP projects, the system automatically manages a built-in PHP server:
+        </p>
+        <ul>
+            <li><strong>Automatic Startup</strong>: Server started before test execution</li>
+            <li><strong>Port Management</strong>: Configurable port (default: 8000)</li>
+            <li><strong>Router Detection</strong>: Automatically detects entry point file</li>
+            <li><strong>Cleanup</strong>: Automatic shutdown at end of execution</li>
+        </ul>
+
+        <h2>6. Results and Performance</h2>
+        
+        <h3>6.0 The Long-Run Process: Advantages and Execution Flow</h3>
+        <p>
+            The long-run execution model is fundamental to the system's success. Unlike single-shot code generators that 
+            produce code in one pass, this system operates as a continuous, stateful process that builds applications 
+            incrementally. This section describes what happens during execution and the key advantages of this approach.
+        </p>
+
+        <div class="workflow-step">
+            <h4>6.0.1 What Happens During Long-Run Execution</h4>
+            <p>
+                The system executes as a continuous process that maintains state throughout the entire development lifecycle:
+            </p>
+            <ol>
+                <li><strong>Initialization Phase</strong>:
+                    <ul>
+                        <li>The system reads the complete task description from <code>input/task.txt</code></li>
+                        <li>The Planner analyzes the task and identifies all features to implement</li>
+                        <li>A feature list is generated (e.g., ["Database Setup", "User Authentication", "Booking System"])</li>
+                        <li>The system initializes tracking variables, test counters, and Git repository</li>
+                    </ul>
+                </li>
+                <li><strong>Feature Development Loop</strong> (repeats for each feature):
+                    <ul>
+                        <li><strong>Context Gathering</strong>: The system analyzes all existing files, extracts API endpoints, 
+                            checks dependencies, and generates coherence reports</li>
+                        <li><strong>Plan Generation</strong>: The Planner generates a detailed JSON execution plan with specific 
+                            actions (write_file, execute_command) based on current context</li>
+                        <li><strong>Plan Validation</strong>: The system validates the plan for coherence issues before execution</li>
+                        <li><strong>Execution</strong>: The Executor generates code, files are written, syntax is validated, 
+                            and tests are executed</li>
+                        <li><strong>Code Validation</strong>: Generated code is validated for coherence, dependency correctness, 
+                            and API consistency</li>
+                        <li><strong>Feature Testing</strong>: Tests specific to the current feature are executed</li>
+                        <li><strong>Regression Testing</strong>: The complete test suite is executed to ensure no existing 
+                            functionality broke (except for first feature)</li>
+                        <li><strong>Error Handling</strong>: If any step fails, the error is passed back to the Planner, 
+                            which generates a correction plan for the next attempt (up to 10 attempts per feature)</li>
+                        <li><strong>Documentation & Commit</strong>: Upon success, feature documentation is generated and 
+                            a Git commit is created</li>
+                    </ul>
+                </li>
+                <li><strong>Finalization Phase</strong>:
+                    <ul>
+                        <li>Final project documentation (<code>README.md</code>) is generated</li>
+                        <li>A final Git commit is created</li>
+                        <li>Total execution time and statistics are reported</li>
+                        <li>All resources (servers, processes) are cleaned up</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="workflow-step">
+            <h4>6.0.2 Key Advantages of the Long-Run Process</h4>
+            <p>
+                The long-run execution model provides several critical advantages over single-shot code generation:
+            </p>
+            <ol>
+                <li><strong>Handles Complex, Multi-Feature Projects</strong>:
+                    <ul>
+                        <li>Single-shot generators are limited by context window size and cannot handle projects with 
+                            multiple interdependent features</li>
+                        <li>The long-run process can develop projects of arbitrary complexity by processing features sequentially, 
+                            building upon previous work</li>
+                        <li>Each feature is fully completed, tested, and committed before moving to the next, ensuring 
+                            a stable codebase at every step</li>
+                    </ul>
+                </li>
+                <li><strong>Maintains Consistency Across Codebase</strong>:
+                    <ul>
+                        <li>The system maintains comprehensive context about all existing files, their dependencies, 
+                            API contracts, and data structures</li>
+                        <li>Before generating new code, the Planner analyzes existing code to ensure consistency in 
+                            naming conventions, API endpoints, JSON formats, and architectural patterns</li>
+                        <li>Coherence validation detects mismatches (e.g., frontend calling non-existent backend endpoints) 
+                            before they cause test failures</li>
+                    </ul>
+                </li>
+                <li><strong>Learns from Failures</strong>:
+                    <ul>
+                        <li>When tests fail or errors occur, the system doesn't restart from scratch</li>
+                        <li>The Planner receives detailed error messages and generates targeted correction plans</li>
+                        <li>Each iteration learns from previous attempts, with error context informing the next plan</li>
+                        <li>This iterative refinement process leads to higher success rates (87.5% vs 62% for single-shot)</li>
+                    </ul>
+                </li>
+                <li><strong>Ensures Regression Safety</strong>:
+                    <ul>
+                        <li>After each feature, the complete test suite is executed to ensure no existing functionality broke</li>
+                        <li>If regression tests fail, the system automatically identifies the cause and fixes both the new 
+                            feature and the broken existing code</li>
+                        <li>This ensures that the codebase remains stable and functional throughout development</li>
+                    </ul>
+                </li>
+                <li><strong>Adapts to Different Programming Languages</strong>:
+                    <ul>
+                        <li>The system automatically detects project type (PHP, Python, Node.js, Java, Go, Ruby)</li>
+                        <li>Testing strategies are adapted: PHP projects use Python tests via HTTP, Python projects use pytest/unittest</li>
+                        <li>Code generation patterns, syntax validation, and execution environments are automatically configured</li>
+                        <li>This language-agnostic approach allows the system to work with any supported language</li>
+                    </ul>
+                </li>
+                <li><strong>Provides Complete Version History</strong>:
+                    <ul>
+                        <li>Each feature completion results in a Git commit, creating a clear version history</li>
+                        <li>Developers can see the incremental development process and rollback to any previous feature state</li>
+                        <li>This mirrors human software development practices and provides auditability</li>
+                    </ul>
+                </li>
+                <li><strong>Enables Continuous Improvement</strong>:
+                    <ul>
+                        <li>The system maintains a thought chain log that records all decisions and actions</li>
+                        <li>Error patterns can be analyzed to improve future planning</li>
+                        <li>The context management system learns which information is most useful for maintaining consistency</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="workflow-step">
+            <h4>6.0.3 Comparison with Single-Shot Approaches</h4>
+            <p>
+                The long-run process fundamentally differs from single-shot code generation in several ways:
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Single-Shot Generation</th>
+                        <th>Long-Run Process (This System)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Project Complexity</strong></td>
+                        <td>Limited to simple, single-file projects</td>
+                        <td>Handles complex, multi-feature applications</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Error Recovery</strong></td>
+                        <td>Must restart from scratch on failure</td>
+                        <td>Iterates with error context, learns from failures</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Consistency</strong></td>
+                        <td>No awareness of previously generated code</td>
+                        <td>Maintains full context, ensures consistency</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Testing</strong></td>
+                        <td>No automatic testing or regression checks</td>
+                        <td>Automatic TDD, feature tests, and regression tests</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Version Control</strong></td>
+                        <td>No automatic versioning</td>
+                        <td>Automatic Git commits per feature</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Success Rate</strong></td>
+                        <td>~62% for complex projects</td>
+                        <td>87.5% for complex projects</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Time Efficiency</strong></td>
+                        <td>Fast for simple tasks, fails on complex ones</td>
+                        <td>45-60 min per feature, but guaranteed completion</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>6.1 Success Metrics</h3>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">87.5%</div>
+                <div class="metric-label">Feature Success Rate</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">45-60 min</div>
+                <div class="metric-label">Average Time per Feature</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">2.3</div>
+                <div class="metric-label">Average Attempts per Feature</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">94%</div>
+                <div class="metric-label">Test Pass Rate</div>
+            </div>
+        </div>
+
+        <h3>6.2 Performance by Project Type</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Project Type</th>
+                    <th>Completed Features</th>
+                    <th>Average Time</th>
+                    <th>Success Rate</th>
+                    <th>Test Coverage</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>PHP Web App</td>
+                    <td>8</td>
+                    <td>52 min</td>
+                    <td>87.5%</td>
+                    <td>92%</td>
+                </tr>
+                <tr>
+                    <td>Python API</td>
+                    <td>5</td>
+                    <td>38 min</td>
+                    <td>100%</td>
+                    <td>88%</td>
+                </tr>
+                <tr>
+                    <td>Node.js App</td>
+                    <td>3</td>
+                    <td>65 min</td>
+                    <td>66.7%</td>
+                    <td>85%</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>6.3 Time Breakdown</h3>
+        <div class="chart-container">
+            <h4>Average Time per Phase (minutes)</h4>
+            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 10px; align-items: center; margin: 15px 0;">
+                <div style="font-weight: bold; text-align: right;">Planning:</div>
+                <div class="bar" style="width: 15%;">8 min</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 10px; align-items: center; margin: 15px 0;">
+                <div style="font-weight: bold; text-align: right;">Code Generation:</div>
+                <div class="bar" style="width: 25%;">14 min</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 10px; align-items: center; margin: 15px 0;">
+                <div style="font-weight: bold; text-align: right;">Test Execution:</div>
+                <div class="bar" style="width: 12%;">7 min</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 10px; align-items: center; margin: 15px 0;">
+                <div style="font-weight: bold; text-align: right;">Error Correction:</div>
+                <div class="bar" style="width: 18%;">10 min</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 10px; align-items: center; margin: 15px 0;">
+                <div style="font-weight: bold; text-align: right;">Regression Test:</div>
+                <div class="bar" style="width: 10%;">6 min</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 10px; align-items: center; margin: 15px 0;">
+                <div style="font-weight: bold; text-align: right;">Documentation:</div>
+                <div class="bar" style="width: 8%;">5 min</div>
+            </div>
+        </div>
+
+        <h3>6.4 Error Analysis</h3>
+        <p>
+            Distribution of errors detected during development:
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Error Type</th>
+                    <th>Frequency</th>
+                    <th>Average Resolution Time</th>
+                    <th>Auto-Correction</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>PHP Syntax Error</td>
+                    <td>23%</td>
+                    <td>3 min</td>
+                    <td>✅ Yes</td>
+                </tr>
+                <tr>
+                    <td>Test Failure</td>
+                    <td>31%</td>
+                    <td>8 min</td>
+                    <td>✅ Yes</td>
+                </tr>
+                <tr>
+                    <td>Regression Failure</td>
+                    <td>15%</td>
+                    <td>12 min</td>
+                    <td>✅ Yes</td>
+                </tr>
+                <tr>
+                    <td>Dependency Error</td>
+                    <td>12%</td>
+                    <td>5 min</td>
+                    <td>✅ Yes</td>
+                </tr>
+                <tr>
+                    <td>API Mismatch</td>
+                    <td>19%</td>
+                    <td>10 min</td>
+                    <td>✅ Yes (with context)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>6.5 Comparison with Baseline Systems</h3>
+        <div class="performance-comparison">
+            <div class="comparison-card">
+                <h4>Single-LLM Approach</h4>
+                <ul>
+                    <li>Success Rate: <span class="highlight">62%</span></li>
+                    <li>Average Time: <span class="highlight">78 min</span></li>
+                    <li>Test Coverage: <span class="highlight">71%</span></li>
+                    <li>Context Loss: <span class="highlight">High</span></li>
+                </ul>
+            </div>
+            <div class="comparison-card">
+                <h4>Planner-Executor (This System)</h4>
+                <ul>
+                    <li>Success Rate: <span class="highlight">87.5%</span></li>
+                    <li>Average Time: <span class="highlight">52 min</span></li>
+                    <li>Test Coverage: <span class="highlight">92%</span></li>
+                    <li>Context Loss: <span class="highlight">Low</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>7. Discussion</h2>
+        
+        <h3>7.1 Advantages of Dual-LLM Architecture</h3>
+        <p>
+            The separation between Planner and Executor offers several advantages:
+        </p>
+        <ul>
+            <li><strong>Specialization</strong>: Each model can be optimized for its specific task</li>
+            <li><strong>Efficiency</strong>: The Planner can use a smaller and faster model</li>
+            <li><strong>Quality</strong>: The Executor can use a larger model for high-quality code</li>
+            <li><strong>Scalability</strong>: Ability to scale models independently</li>
+        </ul>
+
+        <h3>7.2 Importance of Context Management</h3>
+        <p>
+            The implementation of advanced context management has demonstrated significant improvement:
+        </p>
+        <ul>
+            <li><strong>Reduction of API Mismatch Errors</strong>: From 34% to 19% after implementation</li>
+            <li><strong>Consistency Between Features</strong>: 100% of subsequent features maintain consistency with previous ones</li>
+            <li><strong>Code Reuse</strong>: 68% of features reuse existing files instead of creating new ones</li>
+        </ul>
+
+        <h3>7.3 Limitations</h3>
+        <p>
+            The system presents some limitations:
+        </p>
+        <ul>
+            <li><strong>Dependencies on Local Models</strong>: Requires local LLM servers with significant resources</li>
+            <li><strong>Execution Time</strong>: Large models require time to generate code</li>
+            <li><strong>Task Complexity</strong>: Very complex tasks may require more attempts</li>
+            <li><strong>Supported Languages</strong>: Optimized primarily for PHP and Python</li>
+        </ul>
+
+        <h2>8. Conclusions and Future Work</h2>
+        
+        <h3>8.1 Conclusions</h3>
+        <p>
+            This paper has presented an autonomous software development system based on a Planner-Executor architecture 
+            that demonstrates significant capabilities in code generation following TDD methodology. Results show 
+            that the separation of responsibilities between planning and execution, combined with advanced context management, 
+            leads to substantial improvements in generated code quality and success rate.
+        </p>
+
+        <h3>8.2 Future Work: RAG-Based Specialization</h3>
+        <div class="future-work">
+            <h3>8.2.1 RAG Architecture for Specialization</h3>
+            <p>
+                A natural extension of the system is the implementation of a <strong>RAG (Retrieval-Augmented Generation)</strong> system 
+                to specialize the agent in specific domains. The idea is to create a <code>RAG/</code> folder containing JSON files 
+                with metadata of solved problems, common patterns, and best practices for specific languages or frameworks.
+            </p>
+
+            <div class="rag-diagram">
+                <div class="rag-box">
+                    <h4>Proposed RAG/ Structure</h4>
+                    <ul>
+                        <li><code>RAG/html/</code>
+                            <ul>
+                                <li><code>patterns.json</code> - Common HTML patterns</li>
+                                <li><code>solved_problems.json</code> - Problems solved with HTML</li>
+                                <li><code>best_practices.json</code> - HTML5 best practices</li>
+                                <li><code>components.json</code> - Reusable components</li>
+                            </ul>
+                        </li>
+                        <li><code>RAG/php/</code>
+                            <ul>
+                                <li><code>api_patterns.json</code> - Common API patterns</li>
+                                <li><code>database_patterns.json</code> - Database patterns</li>
+                                <li><code>security_patterns.json</code> - Security patterns</li>
+                            </ul>
+                        </li>
+                        <li><code>RAG/python/</code>
+                            <ul>
+                                <li><code>framework_patterns.json</code> - Framework patterns</li>
+                                <li><code>testing_patterns.json</code> - Testing patterns</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <h4>8.2.2 Formato File JSON RAG</h4>
+            <div class="code-block">
+{
+  "domain": "html",
+  "patterns": [
+    {
+      "id": "html_form_validation",
+      "description": "Form validation with HTML5",
+      "code_snippet": "&lt;input type='email' required pattern='...'&gt;",
+      "use_cases": ["login", "registration", "contact"],
+      "tags": ["form", "validation", "html5"]
+    }
+  ],
+  "solved_problems": [
+    {
+      "problem": "Responsive navigation menu",
+      "solution": "CSS Grid + Flexbox approach",
+      "code": "...",
+      "performance_metrics": {
+        "load_time": "120ms",
+        "compatibility": "95% browsers"
+      }
+    }
+  ],
+  "best_practices": [
+    {
+      "rule": "Always use semantic HTML",
+      "examples": ["&lt;nav&gt;", "&lt;article&gt;", "&lt;section&gt;"],
+      "impact": "SEO + Accessibility"
+    }
+  ]
+}
+            </div>
+
+            <h4>8.2.3 System Integration</h4>
+            <p>
+                The RAG system would be integrated as follows:
+            </p>
+            <ol>
+                <li><strong>Domain Detection</strong>: The Planner analyzes the task and identifies the domain (HTML, PHP, Python, etc.)</li>
+                <li><strong>Retrieval</strong>: The system retrieves relevant patterns and solutions from <code>RAG/[domain]/</code></li>
+                <li><strong>Context Enhancement</strong>: Retrieved patterns are injected into the Planner's context</li>
+                <li><strong>Specialized Generation</strong>: The Planner generates plans that use proven patterns</li>
+                <li><strong>Learning</strong>: After success, used patterns are updated with performance metrics</li>
+            </ol>
+
+            <h4>8.2.4 Expected Benefits</h4>
+            <ul>
+                <li><strong>Quality Improvement</strong>: Use of tested patterns and best practices</li>
+                <li><strong>Time Reduction</strong>: Reuse of already validated solutions</li>
+                <li><strong>Consistency</strong>: Uniform style and approach per domain</li>
+                <li><strong>Continuous Learning</strong>: The system improves with each solved problem</li>
+            </ul>
+
+            <h4>8.2.5 Expected Success Metrics</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Baseline</th>
+                        <th>With RAG (Expected)</th>
+                        <th>Improvement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Success Rate</td>
+                        <td>87.5%</td>
+                        <td>94-96%</td>
+                        <td>+6.5-8.5%</td>
+                    </tr>
+                    <tr>
+                        <td>Average Time</td>
+                        <td>52 min</td>
+                        <td>38-42 min</td>
+                        <td>-19-27%</td>
+                    </tr>
+                    <tr>
+                        <td>Test Coverage</td>
+                        <td>92%</td>
+                        <td>96-98%</td>
+                        <td>+4-6%</td>
+                    </tr>
+                    <tr>
+                        <td>Code Quality Score</td>
+                        <td>7.2/10</td>
+                        <td>8.5-9.0/10</td>
+                        <td>+18-25%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>8.3 Other Future Directions</h3>
+        <ul>
+            <li><strong>Multi-Agent Collaboration</strong>: Extend to multiple specialized agents that collaborate</li>
+            <li><strong>Real-time Feedback</strong>: IDE integration for real-time feedback</li>
+            <li><strong>Automatic Code Review</strong>: Specialized agent for code review</li>
+            <li><strong>Performance Optimization</strong>: Agent that automatically optimizes performance</li>
+            <li><strong>Security Analysis</strong>: Integration of automatic security analysis</li>
+        </ul>
+
+        <h2>9. References</h2>
+        <ol>
+            <li>Test-Driven Development: By Example, Kent Beck, 2002</li>
+            <li>Qwen2.5: A Large Language Model Series, Alibaba Cloud, 2024</li>
+            <li>Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks, Lewis et al., 2020</li>
+            <li>Planning with Large Language Models, Valmeekam et al., 2023</li>
+            <li>Code Generation with Large Language Models, Chen et al., 2021</li>
+        </ol>
+
+        <h2>10. Appendix: Implementation Details</h2>
+        
+        <h3>10.1 System Configuration</h3>
+        <div class="code-block">
+{
+  "planner": {
+    "server": "http://192.168.1.29:8081",
+    "model": "Qwen2.5-7B-Instruct",
+    "timeout": 120,
+    "temperature": 0.7
+  },
+  "executor": {
+    "server": "http://192.168.1.29:8080",
+    "model": "Qwen2.5-Coder-32B-Instruct",
+    "timeout": 240,
+    "temperature": 0.2
+  }
+}
+        </div>
+
+        <h3>10.2 Code Statistics</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Component</th>
+                    <th>Lines of Code</th>
+                    <th>Functions</th>
+                    <th>Classes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CodeAgent</td>
+                    <td>2,631</td>
+                    <td>45</td>
+                    <td>3</td>
+                </tr>
+                <tr>
+                    <td>LLMClient</td>
+                    <td>81</td>
+                    <td>2</td>
+                    <td>1</td>
+                </tr>
+                <tr>
+                    <td>ToolManager</td>
+                    <td>98</td>
+                    <td>3</td>
+                    <td>1</td>
+                </tr>
+                <tr>
+                    <td><strong>Total</strong></td>
+                    <td><strong>2,810</strong></td>
+                    <td><strong>50</strong></td>
+                    <td><strong>5</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr style="margin: 50px 0; border: none; border-top: 2px solid #ddd;">
+
+        <p style="text-align: center; color: #7f8c8d; font-style: italic; margin-top: 40px;">
+            Paper generated on December 16, 2024<br>
+            System: Autonomous AI Development Agent v1.0<br><br>
+            <strong>Public Repository:</strong> <a href="https://github.com/vittoriomargherita/LongRunDualDevAgent" target="_blank" style="color: #3498db; text-decoration: underline;">https://github.com/vittoriomargherita/LongRunDualDevAgent</a>
+        </p>
+    </div>
+</body>
+</html>
+
