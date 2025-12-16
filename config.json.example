@@ -1,0 +1,17 @@
+{
+  "git_token": "YOUR_GIT_TOKEN_HERE",
+  "api_key": "ALTERNATIVE_API_KEY_FIELD",
+  "planner": {
+    "server": "http://192.168.1.29:8081",
+    "model": "bartowski_Qwen2.5-7B-Instruct-GGUF_Qwen2.5-7B-Instruct-Q4_K_S.gguf",
+    "timeout": 120,
+    "temperature": 0.7
+  },
+  "executor": {
+    "server": "http://192.168.1.29:8080",
+    "model": "Qwen2.5-Coder-32B-Instruct-Q4_K_M.gguf",
+    "timeout": 240,
+    "temperature": 0.2
+  }
+}
+

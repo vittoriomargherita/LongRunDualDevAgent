@@ -1,0 +1,46 @@
+Role: You are a Senior Full Stack Web Developer specialized in simple, robust PHP applications without heavy frameworks.
+Goal: Create a web application called "BookYourSeat" to manage virtual desk bookings for a company.
+Tech Stack Requirements:
+* Frontend: HTML5, CSS3 (Modern & Clean), Vanilla JavaScript (no frameworks like React/Vue).
+* Backend: Pure PHP (Version 7.4 or 8.x compatible).
+* Database: SQLite 3 (File-based database).
+* Architecture: The app must be self-contained in a single folder named BookYourSeat.
+File Structure Constraint: The main entry point for the user interface must be BookYourSeat.html (which uses JS/AJAX to talk to the PHP backend).
+Core Features:
+1. Database Setup:
+    * Create a script (setup.php) to initialize the SQLite database (database.sqlite) if it doesn't exist.
+    * Tables:
+        * users: id, email, password_hash, is_verified, is_admin, verification_token.
+        * config: key, value (store 'total_seats' here).
+        * bookings: id, user_id, seat_number, booking_date.
+2. Authentication:
+    * User Registration: Email + Password. Generate a token and send an email (to send the email from the web server provider use code similar to the following one:$yourEmailAddress = "vittorio.margherita@buonevacanze.org";
+    * $emailSubject = "New Visitor on Buonevacanze Directly";
+* $remoteIpAddress = $_SERVER['REMOTE_ADDR'];
+* $emailContent = "Someone visited your webpage. IP address:".$remoteIpAddress;
+* // send the message
+* mail($yourEmailAddress, $emailSubject, $emailContent);
+    * )
+    * Login: Session-based.
+    * Admin Flag: One user should be manually set as admin in the DB or the first registered user becomes admin.
+1. Visual Booking System (User View):
+    * A date picker to select the day.
+    * Graphic Interface: Render boxes representing seats (e.g., Seat 1, Seat 2...).
+    * Logic:
+        * Green: Available.
+        * Red: Occupied (show "Occupied" but protect user privacy).
+        * Blue: Booked by the current user.
+    * Action: Clicking a green seat books it. Clicking a blue seat unbooks it.
+    * Constraint: Cannot unbook if the date is today or in the past (must be at least 1 day before).
+2. Admin Panel:
+    * Configuration: Input to set/update the total number of virtual seats available (e.g., 20, 50, etc.).
+    * Rooming List: Select a date and see a list/table of who booked which seat number (Name/Email + Seat Number).
+3. UI/UX:
+    * Responsive design (works on mobile).
+    * Professional, corporate look using a simple CSS framework like Bootstrap (via CDN) or custom neat CSS.
+Deliverables: Please write the code for the following files:
+1. db.php (Database connection and helper functions).
+2. api.php (Handles all AJAX requests: login, register, get_seats, book_seat, admin_actions).
+3. BookYourSeat.html (The main Single Page Application interface).
+4. setup.php (To run once to create tables).
+Implementation Note: Ensure BookYourSeat.html uses fetch() to communicate with api.php. Handle sessions correctly in PHP.

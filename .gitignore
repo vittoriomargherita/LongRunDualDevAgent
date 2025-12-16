@@ -1,0 +1,144 @@
+# ============================================
+# Git Configuration & Sensitive Data
+# ============================================
+# File di configurazione con token e dati sensibili
+config.json
+*.env
+.env
+.env.local
+.env.*.local
+
+# ============================================
+# Generated Output
+# ============================================
+# Directory output contiene il progetto generato
+# Ha il suo repository Git separato
+output/
+
+# ============================================
+# Python
+# ============================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# PyCharm
+.idea/
+
+# ============================================
+# IDE & Editor
+# ============================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# ============================================
+# OS Files
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================
+# Logs & Temporary Files
+# ============================================
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*.cache
+
+# ============================================
+# Project Specific
+# ============================================
+# File di configurazione Node.js (se presenti)
+package-lock.json
+node_modules/
+
+# File di configurazione .NET (se presenti)
+appsettings.json
+appsettings.*.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Thought chain logs
+thought_chain.log
+output/thought_chain.log
+
+# ============================================
+# Backup Files
+# ============================================
+*.backup
+*.old
+*.orig
+
+
+
+
