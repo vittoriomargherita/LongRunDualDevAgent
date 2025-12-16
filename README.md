@@ -1,166 +1,166 @@
 # AI Development Agent - Autonomous Code Generation System
 
-Un sistema autonomo di sviluppo software basato su architettura **Planner-Executor** che utilizza modelli LLM locali per generare codice seguendo metodologia TDD (Test Driven Development).
+An autonomous software development system based on a **Planner-Executor** architecture that uses local LLM models to generate code following TDD (Test Driven Development) methodology.
 
-## 📋 Indice
+## 📋 Table of Contents
 
-- [Panoramica](#panoramica)
-- [Architettura](#architettura)
-- [Caratteristiche](#caratteristiche)
-- [Requisiti](#requisiti)
-- [Installazione](#installazione)
-- [Configurazione](#configurazione)
-- [Utilizzo](#utilizzo)
-- [Struttura del Progetto](#struttura-del-progetto)
-- [Processo di Sviluppo](#processo-di-sviluppo)
-- [Workflow delle Feature](#workflow-delle-feature)
-- [Documentazione Generata](#documentazione-generata)
-- [Gestione Git](#gestione-git)
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Development Process](#development-process)
+- [Feature Workflow](#feature-workflow)
+- [Generated Documentation](#generated-documentation)
+- [Git Management](#git-management)
 - [Troubleshooting](#troubleshooting)
 
-## 🎯 Panoramica
+## 🎯 Overview
 
-L'**AI Development Agent** è un sistema autonomo che:
+The **AI Development Agent** is an autonomous system that:
 
-- **Pianifica** lo sviluppo usando un modello LLM dedicato (Planner)
-- **Genera codice** usando un modello LLM specializzato (Executor)
-- **Segue TDD** rigorosamente: Test → Codice → Refactor
-- **Gestisce Git** automaticamente: crea repository e committa ogni feature
-- **Genera documentazione** per ogni feature e documento finale completo
-- **Cicla fino a correzione** di tutti gli errori prima di procedere
+- **Plans** development using a dedicated LLM model (Planner)
+- **Generates code** using a specialized LLM model (Executor)
+- **Follows TDD** rigorously: Test → Code → Refactor
+- **Manages Git** automatically: creates repository and commits each feature
+- **Generates documentation** for each feature and complete final document
+- **Cycles until correction** of all errors before proceeding
 
-## 🏗️ Architettura
+## 🏗️ Architecture
 
 ### Planner-Executor Pattern
 
-Il sistema utilizza due modelli LLM distinti:
+The system uses two distinct LLM models:
 
 #### 1. **Planner (Qwen2.5-7B-Instruct)**
-- **Ruolo**: Architetto software senior
-- **Responsabilità**:
-  - Analizza il task in `input/task.txt`
-  - Pianifica lo sviluppo feature per feature
-  - Genera piani JSON con azioni specifiche
-  - Gestisce il workflow TDD
-  - Coordina test e regression test
-  - Decide quando committare su Git
+- **Role**: Senior software architect
+- **Responsibilities**:
+  - Analyzes the task in `input/task.txt`
+  - Plans development feature by feature
+  - Generates JSON plans with specific actions
+  - Manages TDD workflow
+  - Coordinates tests and regression tests
+  - Decides when to commit to Git
 
 #### 2. **Executor (Qwen2.5-Coder-32B-Instruct)**
-- **Ruolo**: Sviluppatore esperto
-- **Responsabilità**:
-  - Riceve istruzioni dettagliate dal Planner
-  - Genera codice Python puro (no markdown, no spiegazioni)
-  - Scrive file seguendo le specifiche
-  - Focus esclusivo sulla scrittura del codice
+- **Role**: Expert developer
+- **Responsibilities**:
+  - Receives detailed instructions from the Planner
+  - Generates pure Python code (no markdown, no explanations)
+  - Writes files following specifications
+  - Exclusive focus on code writing
 
-### Flusso di Comunicazione
+### Communication Flow
 
 ```
 Task (input/task.txt)
     ↓
-Planner → Analizza → Genera Piano JSON
+Planner → Analyzes → Generates JSON Plan
     ↓
-Executor → Riceve Istruzioni → Genera Codice
+Executor → Receives Instructions → Generates Code
     ↓
-ToolManager → Esegue Test → Feedback
+ToolManager → Executes Tests → Feedback
     ↓
-Planner → Valuta Risultati → Prossima Azione
+Planner → Evaluates Results → Next Action
 ```
 
-## ✨ Caratteristiche
+## ✨ Features
 
-### 🎯 Sviluppo Feature-by-Feature
-- Una feature alla volta
-- Ogni feature deve essere completa (codice + test + documentazione + commit) prima della successiva
+### 🎯 Feature-by-Feature Development
+- One feature at a time
+- Each feature must be complete (code + tests + documentation + commit) before the next one
 
 ### 🧪 Test Driven Development (TDD)
-- **Red**: Scrive il test (fallisce)
-- **Green**: Scrive il codice (test passa)
-- **Refactor**: Migliora il codice
-- **Regression**: Esegue tutti i test esistenti
+- **Red**: Writes the test (fails)
+- **Green**: Writes the code (test passes)
+- **Refactor**: Improves the code
+- **Regression**: Executes all existing tests
 
-### 📚 Documentazione Automatica
-- Documentazione per ogni feature in `output/docs/features/`
-- Documento finale `output/README.md` con:
-  - Overview del progetto
-  - Istruzioni di compilazione
-  - Istruzioni di esecuzione
-  - Guida al deployment in produzione
+### 📚 Automatic Documentation
+- Documentation for each feature in `output/docs/features/`
+- Final document `output/README.md` with:
+  - Project overview
+  - Build instructions
+  - Execution instructions
+  - Production deployment guide
 
-### 🔄 Gestione Errori Robusta
-- **Cicla indefinitamente** fino a correzione di tutti gli errori
-- Non procede se i test falliscono
-- Feedback dettagliato su ogni errore
+### 🔄 Robust Error Handling
+- **Cycles indefinitely** until all errors are corrected
+- Does not proceed if tests fail
+- Detailed feedback on each error
 
-### 🔧 Gestione Git Automatica
-- Crea repository Git in `output/` se non esiste
-- Rileva repository esistente (non lo ricrea)
-- Commit automatico per ogni feature completata
-- Supporto push remoto con token
+### 🔧 Automatic Git Management
+- Creates Git repository in `output/` if it doesn't exist
+- Detects existing repository (doesn't recreate it)
+- Automatic commit for each completed feature
+- Remote push support with token
 
-### 📁 Organizzazione Output
-- Tutto il codice generato in `output/`
-- Struttura organizzata automaticamente
-- Repository Git separato in `output/.git/`
+### 📁 Output Organization
+- All generated code in `output/`
+- Automatically organized structure
+- Separate Git repository in `output/.git/`
 
-## 📦 Requisiti
+## 📦 Requirements
 
 ### Software
 - **Python 3.10+**
 - **pip** (Python package manager)
-- **Git** (per gestione repository)
+- **Git** (for repository management)
 
 ### Hardware
-- **Server LLM locale** con due modelli:
-  - Planner: Qwen2.5-7B-Instruct (o equivalente)
-  - Executor: Qwen2.5-Coder-32B-Instruct (o equivalente)
-- **RAM**: Minimo 16GB (consigliato 32GB+ per modelli grandi)
-- **GPU**: Consigliata per performance migliori
+- **Local LLM server** with two models:
+  - Planner: Qwen2.5-7B-Instruct (or equivalent)
+  - Executor: Qwen2.5-Coder-32B-Instruct (or equivalent)
+- **RAM**: Minimum 16GB (32GB+ recommended for large models)
+- **GPU**: Recommended for better performance
 
-### Server LLM
-Il sistema richiede due server LLM locali che espongono API compatibili con OpenAI:
-- **Planner Server**: Porta 8081 (default)
-- **Executor Server**: Porta 8080 (default)
+### LLM Server
+The system requires two local LLM servers that expose OpenAI-compatible APIs:
+- **Planner Server**: Port 8081 (default)
+- **Executor Server**: Port 8080 (default)
 
-Utilizza [llama-cpp-python](https://github.com/abetlen/llama-cpp-python) o server compatibili.
+Uses [llama-cpp-python](https://github.com/abetlen/llama-cpp-python) or compatible servers.
 
-## 🚀 Installazione
+## 🚀 Installation
 
-### 1. Clona o scarica il progetto
+### 1. Clone or download the project
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/vittoriomargherita/LongRunDualDevAgent.git
 cd LongRunDualDevAgent
 ```
 
-### 2. Crea ambiente virtuale
+### 2. Create virtual environment
 
 ```bash
 python3 -m venv venv
-source venv/bin/activate  # Su Windows: venv\Scripts\activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### 3. Installa dipendenze
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configura il progetto
+### 4. Configure the project
 
 ```bash
-# Copia il file di esempio
+# Copy the example file
 cp config.json.example config.json
 
-# Modifica config.json con le tue configurazioni
-nano config.json  # o usa il tuo editor preferito
+# Edit config.json with your configurations
+nano config.json  # or use your preferred editor
 ```
 
-## ⚙️ Configurazione
+## ⚙️ Configuration
 
-### File `config.json`
+### `config.json` File
 
-Il file di configurazione contiene tutte le impostazioni necessarie:
+The configuration file contains all necessary settings:
 
 ```json
 {
@@ -181,163 +181,163 @@ Il file di configurazione contiene tutte le impostazioni necessarie:
 }
 ```
 
-### Parametri di Configurazione
+### Configuration Parameters
 
 #### Planner
-- **server**: URL del server LLM per il Planner
-- **model**: Nome del modello da utilizzare
-- **timeout**: Timeout in secondi (default: 120)
-- **temperature**: Temperatura di sampling (0.7 per planning)
+- **server**: URL of the LLM server for the Planner
+- **model**: Name of the model to use
+- **timeout**: Timeout in seconds (default: 120)
+- **temperature**: Sampling temperature (0.7 for planning)
 
 #### Executor
-- **server**: URL del server LLM per l'Executor
-- **model**: Nome del modello da utilizzare
-- **timeout**: Timeout in secondi (default: 240 per modelli grandi)
-- **temperature**: Temperatura di sampling (0.2 per codice deterministico)
+- **server**: URL of the LLM server for the Executor
+- **model**: Name of the model to use
+- **timeout**: Timeout in seconds (default: 240 for large models)
+- **temperature**: Sampling temperature (0.2 for deterministic code)
 
 #### Git
-- **git_token**: Token Git per push remoti (opzionale)
-- **api_key**: Campo alternativo per token API
+- **git_token**: Git token for remote push (optional)
+- **api_key**: Alternative field for API token
 
-### Configurazione Server LLM
+### LLM Server Configuration
 
-Assicurati che i server LLM siano in esecuzione e accessibili agli URL configurati.
+Make sure the LLM servers are running and accessible at the configured URLs.
 
-Esempio con llama-cpp-python:
+Example with llama-cpp-python:
 ```bash
-# Server Planner (porta 8081)
+# Planner Server (port 8081)
 python -m llama_cpp.server --model path/to/planner-model.gguf --port 8081
 
-# Server Executor (porta 8080)
+# Executor Server (port 8080)
 python -m llama_cpp.server --model path/to/executor-model.gguf --port 8080
 ```
 
-## 💻 Utilizzo
+## 💻 Usage
 
-### 1. Prepara il Task
+### 1. Prepare the Task
 
-Crea o modifica il file `input/task.txt` con la descrizione del software da sviluppare:
+Create or edit the `input/task.txt` file with the description of the software to develop:
 
 ```
-Genera un software per la gestione completa del ristorante.
-Dalla cucina agli ordini, al menù, al pagamento.
-Il progetto deve essere web e deve avere interfacce utente
-per ogni utente (cameriere, cuoco, receptionist, cassa).
+Generate a complete restaurant management software.
+From kitchen to orders, menu, to payment.
+The project must be web-based and must have user interfaces
+for each user (waiter, cook, receptionist, cashier).
 ```
 
-### 2. Avvia l'Agente
+### 2. Start the Agent
 
 ```bash
-# Metodo 1: Usa lo script di avvio (consigliato)
+# Method 1: Use the startup script (recommended)
 ./run_agent.sh
 
-# Metodo 2: Attiva venv e esegui manualmente
+# Method 2: Activate venv and run manually
 source venv/bin/activate
 python3 code_agent.py
 ```
 
-### 3. Monitora l'Esecuzione
+### 3. Monitor Execution
 
-L'agente mostrerà:
-- 🤖 **Planner thinking...** - Il planner sta analizzando
-- ✍️ **Executor coding...** - L'executor sta generando codice
-- ⚙️ **Executing...** - Esecuzione comandi/test
-- ✅ **Success** - Operazione completata
-- ❌ **Error** - Errore rilevato (l'agente ciclerà per correggerlo)
+The agent will show:
+- 🤖 **Planner thinking...** - The planner is analyzing
+- ✍️ **Executor coding...** - The executor is generating code
+- ⚙️ **Executing...** - Executing commands/tests
+- ✅ **Success** - Operation completed
+- ❌ **Error** - Error detected (the agent will cycle to correct it)
 
-### 4. Risultati
+### 4. Results
 
-Tutto il codice generato sarà in:
-- **`output/`** - Directory principale
-- **`output/docs/features/`** - Documentazione feature
-- **`output/README.md`** - Documentazione finale del progetto
-- **`output/.git/`** - Repository Git del progetto generato
+All generated code will be in:
+- **`output/`** - Main directory
+- **`output/docs/features/`** - Feature documentation
+- **`output/README.md`** - Final project documentation
+- **`output/.git/`** - Git repository of the generated project
 
-## 📂 Struttura del Progetto
+## 📂 Project Structure
 
 ```
 LongRunDualDevAgent/
-├── code_agent.py              # Script principale dell'agente
-├── config.json                # Configurazione (NON committare!)
-├── config.json.example         # Esempio configurazione
-├── requirements.txt           # Dipendenze Python
-├── run_agent.sh              # Script di avvio
-├── .gitignore                 # File da escludere da Git
-├── README.md                  # Questo file
+├── code_agent.py              # Main agent script
+├── config.json                # Configuration (DO NOT commit!)
+├── config.json.example         # Configuration example
+├── requirements.txt           # Python dependencies
+├── run_agent.sh              # Startup script
+├── .gitignore                 # Files to exclude from Git
+├── README.md                  # This file
 │
-├── input/                     # Input dell'agente
-│   └── task.txt               # Descrizione del task da sviluppare
+├── input/                     # Agent input
+│   └── task.txt               # Description of the task to develop
 │
-├── output/                    # Output generato (NON committare!)
-│   ├── .git/                  # Repository Git del progetto generato
-│   ├── README.md              # Documentazione finale del progetto
+├── output/                    # Generated output (DO NOT commit!)
+│   ├── .git/                  # Git repository of the generated project
+│   ├── README.md              # Final project documentation
 │   ├── docs/
-│   │   └── features/          # Documentazione per feature
-│   ├── src/                   # Codice sorgente generato
-│   ├── tests/                 # Test generati
-│   └── ...                    # Altri file del progetto
+│   │   └── features/          # Feature documentation
+│   ├── src/                   # Generated source code
+│   ├── tests/                 # Generated tests
+│   └── ...                    # Other project files
 │
-└── venv/                      # Ambiente virtuale Python (NON committare!)
+└── venv/                      # Python virtual environment (DO NOT commit!)
 ```
 
-## 🔄 Processo di Sviluppo
+## 🔄 Development Process
 
-### Fase 1: Pianificazione
-1. L'agente legge `input/task.txt`
-2. Il **Planner** analizza il task
-3. Il Planner genera un piano JSON con azioni specifiche
-4. Il piano include: feature da sviluppare, file da creare, test da scrivere
+### Phase 1: Planning
+1. The agent reads `input/task.txt`
+2. The **Planner** analyzes the task
+3. The Planner generates a JSON plan with specific actions
+4. The plan includes: features to develop, files to create, tests to write
 
-### Fase 2: Sviluppo Feature
-Per ogni feature:
+### Phase 2: Feature Development
+For each feature:
 
-1. **Scrittura Test (Red)**
-   - Planner decide quali test scrivere
-   - Executor genera il codice del test
-   - Test viene salvato in `output/tests/`
+1. **Test Writing (Red)**
+   - Planner decides which tests to write
+   - Executor generates the test code
+   - Test is saved in `output/tests/`
 
-2. **Scrittura Codice (Green)**
-   - Planner decide l'implementazione
-   - Executor genera il codice
-   - Codice viene salvato in `output/src/`
+2. **Code Writing (Green)**
+   - Planner decides the implementation
+   - Executor generates the code
+   - Code is saved in `output/src/`
 
-3. **Esecuzione Test Feature**
-   - ToolManager esegue il test specifico della feature
-   - Se fallisce → Planner genera fix → ciclo fino a successo
+3. **Feature Test Execution**
+   - ToolManager executes the feature-specific test
+   - If it fails → Planner generates fix → cycle until success
 
-4. **Esecuzione Regression Test**
-   - ToolManager esegue l'intera suite di test
-   - Verifica che nessuna funzionalità esistente sia rotta
-   - Se fallisce → Planner genera fix → ciclo fino a successo
+4. **Regression Test Execution**
+   - ToolManager executes the entire test suite
+   - Verifies that no existing functionality is broken
+   - If it fails → Planner generates fix → cycle until success
 
-5. **Generazione Documentazione**
-   - Sistema genera documentazione della feature
-   - Salva in `output/docs/features/[feature_name].md`
+5. **Documentation Generation**
+   - System generates feature documentation
+   - Saves in `output/docs/features/[feature_name].md`
 
-6. **Commit Git**
-   - Solo se tutti i test passano
+6. **Git Commit**
+   - Only if all tests pass
    - Commit message: `"Feature: [name] - implemented and tested"`
-   - Push opzionale se token configurato
+   - Optional push if token is configured
 
-### Fase 3: Feature Successiva
-- Solo dopo completamento completo della feature precedente
-- Processo si ripete per ogni feature
+### Phase 3: Next Feature
+- Only after complete completion of the previous feature
+- Process repeats for each feature
 
-### Fase 4: Finalizzazione
-- Quando tutte le feature sono complete
-- Genera `output/README.md` finale
-- Commit finale del progetto
+### Phase 4: Finalization
+- When all features are complete
+- Generates final `output/README.md`
+- Final project commit
 
-## 🎯 Workflow delle Feature
+## 🎯 Feature Workflow
 
 ```
 ┌─────────────────────────────────────────┐
-│  Planner: Identifica Feature            │
+│  Planner: Identifies Feature            │
 └──────────────┬──────────────────────────┘
                │
                ▼
 ┌─────────────────────────────────────────┐
-│  Planner: Genera Piano (JSON)            │
+│  Planner: Generates Plan (JSON)          │
 │  - write_file: test_feature.py          │
 │  - write_file: feature.py                │
 │  - execute_command: pytest test_feature  │
@@ -345,111 +345,111 @@ Per ogni feature:
                │
                ▼
 ┌─────────────────────────────────────────┐
-│  Executor: Genera Codice Test           │
+│  Executor: Generates Test Code          │
 └──────────────┬──────────────────────────┘
                │
                ▼
 ┌─────────────────────────────────────────┐
-│  Executor: Genera Codice Feature        │
+│  Executor: Generates Feature Code       │
 └──────────────┬──────────────────────────┘
                │
                ▼
 ┌─────────────────────────────────────────┐
-│  ToolManager: Esegue Test Feature       │
-└──────────────┬──────────────────────────┘
-               │
-         ┌─────┴─────┐
-         │  Passa?   │
-         └─────┬─────┘
-               │ NO
-               │ ┌──────────────────────┐
-               └─┤ Planner: Genera Fix   │
-                 │ Executor: Corregge    │
-                 │ ToolManager: Ritesa   │
-                 └───────────┬──────────┘
-                             │
-                             └───► Cicla fino a successo
-               │ YES
-               ▼
-┌─────────────────────────────────────────┐
-│  ToolManager: Esegue Regression Test   │
+│  ToolManager: Executes Feature Test     │
 └──────────────┬──────────────────────────┘
                │
          ┌─────┴─────┐
-         │  Passa?   │
+         │  Pass?    │
          └─────┬─────┘
                │ NO
                │ ┌──────────────────────┐
-               └─┤ Planner: Genera Fix   │
-                 │ Executor: Corregge    │
-                 │ ToolManager: Ritesa   │
+               └─┤ Planner: Generates Fix│
+                 │ Executor: Corrects   │
+                 │ ToolManager: Retries  │
                  └───────────┬──────────┘
                              │
-                             └───► Cicla fino a successo
+                             └───► Cycles until success
                │ YES
                ▼
 ┌─────────────────────────────────────────┐
-│  Sistema: Genera Documentazione         │
+│  ToolManager: Executes Regression Test  │
+└──────────────┬──────────────────────────┘
+               │
+         ┌─────┴─────┐
+         │  Pass?    │
+         └─────┬─────┘
+               │ NO
+               │ ┌──────────────────────┐
+               └─┤ Planner: Generates Fix│
+                 │ Executor: Corrects   │
+                 │ ToolManager: Retries  │
+                 └───────────┬──────────┘
+                             │
+                             └───► Cycles until success
+               │ YES
+               ▼
+┌─────────────────────────────────────────┐
+│  System: Generates Documentation        │
 └──────────────┬──────────────────────────┘
                │
                ▼
 ┌─────────────────────────────────────────┐
-│  Git: Commit Feature                    │
+│  Git: Commits Feature                   │
 └──────────────┬──────────────────────────┘
                │
                ▼
 ┌─────────────────────────────────────────┐
-│  Planner: Prossima Feature             │
+│  Planner: Next Feature                  │
 └─────────────────────────────────────────┘
 ```
 
-## 📚 Documentazione Generata
+## 📚 Generated Documentation
 
-### Documentazione Feature
+### Feature Documentation
 
-Per ogni feature completata, viene generato un file in `output/docs/features/[feature_name].md` contenente:
-- Overview della feature
-- File di implementazione
-- File di test
-- Stato di completamento
+For each completed feature, a file is generated in `output/docs/features/[feature_name].md` containing:
+- Feature overview
+- Implementation files
+- Test files
+- Completion status
 
-### Documentazione Finale
+### Final Documentation
 
-Il file `output/README.md` finale include:
-- **Overview del progetto**: Descrizione generale
-- **Lista delle feature**: Tutte le feature implementate
-- **Struttura del progetto**: Organizzazione dei file
-- **Building**: Come compilare il progetto
-- **Running**: Come eseguire il progetto
-- **Deployment**: Guida al deployment in produzione
+The final `output/README.md` file includes:
+- **Project Overview**: General description
+- **Feature List**: All implemented features
+- **Project Structure**: File organization
+- **Building**: How to build the project
+- **Running**: How to run the project
+- **Deployment**: Production deployment guide
 
-## 🔧 Gestione Git
+## 🔧 Git Management
 
-### Repository Automatico
+### Automatic Repository
 
-L'agente gestisce automaticamente il repository Git:
+The agent automatically manages the Git repository:
 
-1. **Creazione Repository**
-   - Verifica se esiste `output/.git/`
-   - Se non esiste, crea nuovo repository
-   - Configura user.name e user.email automaticamente
+1. **Repository Creation**
+   - Checks if `output/.git/` exists
+   - If it doesn't exist, creates new repository
+   - Automatically configures user.name and user.email
 
-2. **Commit Automatici**
-   - Un commit per ogni feature completata
-   - Solo se tutti i test passano
+2. **Automatic Commits**
+   - One commit for each completed feature
+   - Only if all tests pass
    - Message: `"Feature: [name] - implemented and tested"`
 
-3. **Push Remoto (Opzionale)**
-   - Se `git_token` è configurato
-   - Push automatico dopo ogni commit
-   - Supporta GitHub e GitLab
+3. **Remote Push (Optional)**
+   - If `git_token` is configured
+   - Automatic push after each commit
+   - Supports GitHub and GitLab
 
-### Configurazione Git Token
+### Git Token Configuration
 
-Per abilitare push remoti:
+To enable remote push:
 
-1. Genera un token Git (GitHub/GitLab)
-2. Aggiungi al `config.json`:
+1. Generate a Git token (GitHub/GitLab)
+2. Add to `config.json`:
    ```json
    {
      "git_token": "ghp_xxxxxxxxxxxxxxxxxxxx"
@@ -458,91 +458,91 @@ Per abilitare push remoti:
 
 ## 🐛 Troubleshooting
 
-### Errore: "ModuleNotFoundError: No module named 'requests'"
+### Error: "ModuleNotFoundError: No module named 'requests'"
 
-**Soluzione**: Installa le dipendenze
+**Solution**: Install dependencies
 ```bash
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Errore: "Connection error" o "Request timeout"
+### Error: "Connection error" or "Request timeout"
 
-**Possibili cause**:
-- Server LLM non in esecuzione
-- URL o porta errati in `config.json`
-- Timeout troppo basso per modelli grandi
+**Possible causes**:
+- LLM server not running
+- Incorrect URL or port in `config.json`
+- Timeout too low for large models
 
-**Soluzione**:
-1. Verifica che i server LLM siano attivi
-2. Controlla URL e porte in `config.json`
-3. Aumenta `timeout` se necessario
+**Solution**:
+1. Verify that LLM servers are active
+2. Check URL and ports in `config.json`
+3. Increase `timeout` if necessary
 
-### L'agente non genera codice
+### Agent doesn't generate code
 
-**Possibili cause**:
-- Planner non riceve risposte valide
-- JSON malformato dal Planner
-- Errori di parsing
+**Possible causes**:
+- Planner doesn't receive valid responses
+- Malformed JSON from Planner
+- Parsing errors
 
-**Soluzione**:
-1. Controlla i log per errori specifici
-2. Verifica che i modelli siano correttamente configurati
-3. Aumenta `temperature` del Planner se necessario
+**Solution**:
+1. Check logs for specific errors
+2. Verify that models are correctly configured
+3. Increase Planner `temperature` if necessary
 
-### Test falliscono continuamente
+### Tests fail continuously
 
-**Comportamento atteso**: L'agente cicla fino a correzione. Se continua a fallire:
-1. Verifica che il task in `input/task.txt` sia chiaro
-2. Controlla i log per capire cosa sta fallendo
-3. Potrebbe essere necessario migliorare i prompt del Planner
+**Expected behavior**: The agent cycles until correction. If it continues to fail:
+1. Verify that the task in `input/task.txt` is clear
+2. Check logs to understand what is failing
+3. It may be necessary to improve Planner prompts
 
-### Repository Git non viene creato
+### Git repository is not created
 
-**Soluzione**:
-1. Verifica permessi di scrittura in `output/`
-2. Controlla che Git sia installato
-3. L'agente crea il repository al primo file generato
+**Solution**:
+1. Verify write permissions in `output/`
+2. Check that Git is installed
+3. The agent creates the repository at the first generated file
 
-## 📝 Note Importanti
+## 📝 Important Notes
 
-### File da NON Committare
+### Files to NOT Commit
 
-- `config.json` - Contiene token sensibili
-- `output/` - Ha il suo repository Git separato
-- `venv/` - Ambiente virtuale
-- File temporanei e cache
+- `config.json` - Contains sensitive tokens
+- `output/` - Has its own separate Git repository
+- `venv/` - Virtual environment
+- Temporary files and cache
 
-### Sicurezza
+### Security
 
-- **NON committare** `config.json` con token reali
-- Usa `config.json.example` come template
-- Il file è già in `.gitignore`
+- **DO NOT commit** `config.json` with real tokens
+- Use `config.json.example` as a template
+- The file is already in `.gitignore`
 
 ### Performance
 
-- Modelli grandi (32B+) richiedono molto RAM/VRAM
-- Timeout elevati per modelli grandi
-- Considera GPU per performance migliori
+- Large models (32B+) require a lot of RAM/VRAM
+- High timeouts for large models
+- Consider GPU for better performance
 
-## 🤝 Contribuire
+## 🤝 Contributing
 
-Per contribuire al progetto:
+To contribute to the project:
 
-1. Fork del repository
-2. Crea branch per feature (`git checkout -b feature/AmazingFeature`)
-3. Commit delle modifiche (`git commit -m 'Add AmazingFeature'`)
-4. Push al branch (`git push origin feature/AmazingFeature`)
-5. Apri una Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 📄 Licenza
+## 📄 License
 
-[Specifica la licenza del progetto]
+[Specify project license]
 
-## 👤 Autore
+## 👤 Author
 
-[Informazioni sull'autore]
+[Author information]
 
 ---
 
-**Sviluppato con ❤️ usando architettura Planner-Executor e TDD**
+**Developed with ❤️ using Planner-Executor architecture and TDD**
