@@ -8,6 +8,23 @@ config.json
 .env.local
 .env.*.local
 
+# File che potrebbero contenere token, chiavi o credenziali
+*credentials*
+*secret*
+*key*
+*token*
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+*.jks
+*.keystore
+*_key
+*_token
+*_secret
+*_password
+
 # ============================================
 # Generated Output
 # ============================================
