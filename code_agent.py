@@ -221,6 +221,7 @@ class CodeAgent:
         self.current_feature: Optional[str] = None
         self.feature_test_passed: bool = False
         self.feature_docs: List[Dict[str, str]] = []  # Store feature documentation
+        self.current_feature_files: List[str] = []  # Track files written for current feature
         self.git_repo_initialized: bool = False
         self.test_counter: int = 0  # Counter for test numbering
         self.thought_chain: List[str] = []  # Store thought chain for logging
@@ -277,25 +278,39 @@ class CodeAgent:
     
     def _ensure_git_repo(self) -> None:
         """Initialize Git repository if it doesn't exist."""
-        # Check if we're already in a git repo
-        stdout, stderr, code = self.tools.execute_command("git rev-parse --git-dir", timeout=10, cwd=self.output_dir)
-        if code == 0:
-            if not self.git_repo_initialized:
-                print("✅ Git repository already exists in output/")
-            self.git_repo_initialized = True
-            return
-        
-        # Ensure output directory exists
+        # CRITICAL: Ensure output directory exists FIRST before checking for git repo
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         
+        # Check if .git directory exists (more reliable than git rev-parse when directory might not exist)
+        git_dir = os.path.join(self.output_dir, ".git")
+        if os.path.exists(git_dir) and os.path.isdir(git_dir):
+            # Verify it's a valid git repo
+            stdout, stderr, code = self.tools.execute_command("git rev-parse --git-dir", timeout=10, cwd=self.output_dir)
+            if code == 0:
+                if not self.git_repo_initialized:
+                    print("✅ Git repository already exists in output/")
+                self.git_repo_initialized = True
+                return
+        
+        # If we get here, either .git doesn't exist or it's not a valid repo
         # Initialize git repo (even if directory is empty - will be ready for first commit)
         print("🔧 Initializing Git repository in output/...")
         self._log_thought("Initializing Git repository")
         
         try:
-            self.tools.execute_command("git init", timeout=10, cwd=self.output_dir)
-            self.tools.execute_command("git config user.name 'AI Development Agent'", timeout=10, cwd=self.output_dir)
-            self.tools.execute_command("git config user.email 'agent@dev.local'", timeout=10, cwd=self.output_dir)
+            # Initialize git repo
+            stdout, stderr, code = self.tools.execute_command("git init", timeout=10, cwd=self.output_dir)
+            if code != 0:
+                raise Exception(f"git init failed: {stderr}")
+            
+            # Configure git user (required for commits)
+            stdout, stderr, code = self.tools.execute_command("git config user.name 'AI Development Agent'", timeout=10, cwd=self.output_dir)
+            if code != 0:
+                print(f"⚠️  Warning: Failed to set git user.name: {stderr}")
+            
+            stdout, stderr, code = self.tools.execute_command("git config user.email 'agent@dev.local'", timeout=10, cwd=self.output_dir)
+            if code != 0:
+                print(f"⚠️  Warning: Failed to set git user.email: {stderr}")
             
             # Create initial .gitignore if needed
             gitignore_path = os.path.join(self.output_dir, ".gitignore")
@@ -303,12 +318,19 @@ class CodeAgent:
                 gitignore_content = "__pycache__/\n*.pyc\n*.pyo\n*.pyd\n.Python\nvenv/\nenv/\n.venv/\n*.log\n.DS_Store\n"
                 self.tools.write_file(gitignore_path, gitignore_content)
             
-            self.git_repo_initialized = True
-            print("✅ Git repository initialized")
-            self._log_thought("Git repository initialized successfully")
+            # Verify repository was created
+            if os.path.exists(git_dir) and os.path.isdir(git_dir):
+                self.git_repo_initialized = True
+                print("✅ Git repository initialized successfully")
+                self._log_thought("Git repository initialized successfully")
+            else:
+                raise Exception("Git repository directory was not created")
+                
         except Exception as e:
             print(f"⚠️  Error initializing Git repository: {e}")
             self._log_thought(f"Git repository initialization failed: {e}")
+            # Don't set git_repo_initialized = True if initialization failed
+            self.git_repo_initialized = False
     
     def _normalize_path(self, path: str) -> str:
         """
@@ -367,26 +389,143 @@ class CodeAgent:
         # Join with output directory
         return os.path.join(self.output_dir, path)
     
+    def _get_file_description(self, file_path: str) -> str:
+        """Get a brief description of what a file does by analyzing its content."""
+        try:
+            full_path = os.path.join(self.output_dir, file_path)
+            if not os.path.exists(full_path):
+                return "File not found"
+            
+            with open(full_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Analyze file content to generate description
+            if file_path.endswith('.php'):
+                if 'api.php' in file_path.lower():
+                    # Extract API endpoints
+                    import re
+                    endpoints = re.findall(r"case\s+['\"]([^'\"]+)['\"]", content)
+                    if endpoints:
+                        return f"API handler with endpoints: {', '.join(endpoints[:5])}"
+                    return "API handler for HTTP requests"
+                elif 'db.php' in file_path.lower() or 'database' in file_path.lower():
+                    # Extract class methods
+                    methods = re.findall(r'public\s+function\s+(\w+)', content)
+                    if methods:
+                        return f"Database class with methods: {', '.join(methods[:5])}"
+                    return "Database connection and query handler"
+                elif 'setup.php' in file_path.lower():
+                    return "Database initialization script - creates tables and schema"
+                else:
+                    # Try to find main function or class
+                    if 'function' in content:
+                        funcs = re.findall(r'function\s+(\w+)', content)
+                        if funcs:
+                            return f"PHP file with functions: {', '.join(funcs[:3])}"
+                    return "PHP source file"
+            
+            elif file_path.endswith('.html'):
+                # Check for main functionality
+                if 'login' in content.lower():
+                    return "HTML page with login functionality"
+                elif 'booking' in content.lower() or 'seat' in content.lower():
+                    return "HTML page for seat booking interface"
+                elif 'admin' in content.lower():
+                    return "HTML page for admin panel"
+                return "HTML user interface page"
+            
+            elif file_path.endswith('.py') and 'test' in file_path.lower():
+                # Extract test function names
+                import re
+                tests = re.findall(r'def\s+(test_\w+)', content)
+                if tests:
+                    return f"Test file with cases: {', '.join(tests[:5])}"
+                return "Python test file"
+            
+            return "Source code file"
+        except Exception as e:
+            return f"Error analyzing file: {str(e)}"
+    
     def _generate_feature_documentation(self, feature_name: str, code_files: List[str], test_files: List[str]) -> str:
-        """Generate documentation for a completed feature."""
+        """Generate detailed documentation for a completed feature."""
+        # Remove duplicates and sort
+        unique_code_files = sorted(set(code_files))
+        unique_test_files = sorted(set(test_files))
+        
         doc = f"# Feature: {feature_name}\n\n"
+        
+        # Generate detailed overview based on feature name and files
         doc += f"## Overview\n\n"
-        doc += f"This feature was implemented as part of the autonomous development process.\n\n"
-        doc += f"## Implementation Files\n\n"
         
-        if code_files:
-            doc += "### Source Code\n\n"
-            for file in code_files:
-                doc += f"- `{file}`\n"
+        # Create a more descriptive overview based on feature name
+        feature_lower = feature_name.lower()
+        if 'login' in feature_lower or 'authentication' in feature_lower:
+            doc += f"This feature implements user authentication functionality, allowing users to log in to the system. "
+            doc += f"It includes session management, password verification, and user validation.\n\n"
+        elif 'registration' in feature_lower or 'register' in feature_lower:
+            doc += f"This feature implements user registration functionality, allowing new users to create accounts. "
+            doc += f"It includes email validation, password hashing, and verification token generation.\n\n"
+        elif 'booking' in feature_lower or 'seat' in feature_lower:
+            doc += f"This feature implements seat booking functionality, allowing users to reserve seats for specific dates. "
+            doc += f"It includes seat availability checking, booking creation, and conflict prevention.\n\n"
+        elif 'admin' in feature_lower:
+            doc += f"This feature implements administrative functionality, providing admin users with management capabilities. "
+            doc += f"It includes configuration management and rooming list generation.\n\n"
+        elif 'date' in feature_lower or 'picker' in feature_lower:
+            doc += f"This feature implements date selection functionality, allowing users to choose dates for booking operations. "
+            doc += f"It includes date validation and integration with the booking system.\n\n"
+        elif 'session' in feature_lower:
+            doc += f"This feature implements session management, maintaining user authentication state across requests. "
+            doc += f"It includes session creation, validation, and cleanup.\n\n"
+        elif 'visual' in feature_lower or 'design' in feature_lower or 'responsive' in feature_lower:
+            doc += f"This feature implements user interface improvements, including responsive design and visual enhancements. "
+            doc += f"It ensures the application works well on different screen sizes and provides an improved user experience.\n\n"
+        elif 'privacy' in feature_lower or 'protection' in feature_lower:
+            doc += f"This feature implements privacy and security measures to protect user data and ensure secure operations.\n\n"
+        else:
+            doc += f"This feature was implemented as part of the autonomous development process. "
+            doc += f"It includes the necessary code, tests, and documentation to fulfill the requirements.\n\n"
+        
+        # Implementation Files section with descriptions
+        if unique_code_files:
+            doc += "## Implementation Files\n\n"
+            doc += "### Source Code Files\n\n"
+            for file in unique_code_files:
+                description = self._get_file_description(file)
+                # Remove output/ prefix if present for cleaner display
+                display_path = file.replace('output/', '') if file.startswith('output/') else file
+                doc += f"- **`{display_path}`**: {description}\n"
             doc += "\n"
         
-        if test_files:
-            doc += "### Tests\n\n"
-            for file in test_files:
-                doc += f"- `{file}`\n"
+        if unique_test_files:
+            doc += "### Test Files\n\n"
+            for file in unique_test_files:
+                description = self._get_file_description(file)
+                # Remove output/ prefix if present for cleaner display
+                display_path = file.replace('output/', '') if file.startswith('output/') else file
+                doc += f"- **`{display_path}`**: {description}\n"
             doc += "\n"
         
-        doc += f"## Status\n\n"
+        # Technical Details section
+        doc += "## Technical Details\n\n"
+        
+        # Count files by type
+        php_files = [f for f in unique_code_files if f.endswith('.php')]
+        html_files = [f for f in unique_code_files if f.endswith('.html')]
+        py_files = [f for f in unique_code_files if f.endswith('.py')]
+        
+        if php_files:
+            doc += f"- **PHP Files**: {len(php_files)} file(s) implementing backend logic\n"
+        if html_files:
+            doc += f"- **HTML Files**: {len(html_files)} file(s) implementing user interface\n"
+        if py_files:
+            doc += f"- **Python Files**: {len(py_files)} file(s) for testing\n"
+        if unique_test_files:
+            doc += f"- **Test Coverage**: {len(unique_test_files)} test file(s) ensuring functionality\n"
+        doc += "\n"
+        
+        # Status section
+        doc += "## Status\n\n"
         doc += f"✅ Feature implemented and tested\n"
         doc += f"✅ All unit tests passing\n"
         doc += f"✅ All regression tests passing\n"
@@ -2091,17 +2230,27 @@ OUTPUT FORMAT: You must respond with a VALID, COMPLETE JSON ARRAY only. No markd
                         # Check if instruction mentions require/include
                         instruction = action.get('content_instruction', '')
                         import re
-                        require_matches = re.findall(r'require\s+[\'"]([^\'"]+\.php)[\'"]', instruction)
+                        # Capture ALL require/include statements, not just .php files
+                        require_matches = re.findall(r'(?:require|include)(?:_once)?\s+[\'"]([^\'"]+)[\'"]', instruction)
                         for req_file in require_matches:
-                            # Check if file exists
-                            req_path = os.path.join(src_dir, req_file)
-                            if not os.path.exists(req_path):
-                                # Check for similar files
-                                similar = [f for f in existing_php_files if req_file.replace('.php', '') in f or f.replace('.php', '') in req_file]
-                                if similar:
-                                    warnings.append(f"⚠️ Plan will write {target} requiring '{req_file}' but file doesn't exist. Did you mean '{similar[0]}'?")
+                            # Check if it's a valid PHP file (should end with .php)
+                            if not req_file.endswith('.php'):
+                                # Invalid: trying to require/include non-PHP file
+                                if req_file.endswith(('.sqlite', '.db', '.sqlite3', '.json', '.txt', '.log')):
+                                    warnings.append(f"❌ CRITICAL: Plan will write {target} requiring '{req_file}' which is a data file, not a PHP file! Cannot require/include database or data files.")
                                 else:
-                                    warnings.append(f"⚠️ Plan will write {target} requiring '{req_file}' but file doesn't exist")
+                                    warnings.append(f"⚠️ Plan will write {target} requiring '{req_file}' which doesn't end with .php. This may be an error.")
+                            
+                            # Check if file exists (only for .php files)
+                            if req_file.endswith('.php'):
+                                req_path = os.path.join(src_dir, req_file)
+                                if not os.path.exists(req_path):
+                                    # Check for similar files
+                                    similar = [f for f in existing_php_files if req_file.replace('.php', '') in f or f.replace('.php', '') in req_file]
+                                    if similar:
+                                        warnings.append(f"⚠️ Plan will write {target} requiring '{req_file}' but file doesn't exist. Did you mean '{similar[0]}'?")
+                                    else:
+                                        warnings.append(f"⚠️ Plan will write {target} requiring '{req_file}' but file doesn't exist")
         
         return len(warnings) == 0, warnings
     
@@ -2134,16 +2283,29 @@ OUTPUT FORMAT: You must respond with a VALID, COMPLETE JSON ARRAY only. No markd
                     content = f.read()
                 
                 import re
-                require_matches = re.findall(r'require\s+[\'"]([^\'"]+\.php)[\'"]', content)
+                # Capture ALL require/include statements, not just .php files
+                require_matches = re.findall(r'(?:require|include)(?:_once)?\s+[\'"]([^\'"]+)[\'"]', content)
                 for req_file in require_matches:
-                    req_path = os.path.join(src_dir, req_file)
-                    if not os.path.exists(req_path):
-                        # Check for similar files
-                        similar = [f for f in php_files if req_file.replace('.php', '') in f or f.replace('.php', '') in req_file]
-                        if similar:
-                            errors.append(f"❌ {php_file} requires '{req_file}' but file doesn't exist. Did you mean '{similar[0]}'?")
+                    # Check if it's a valid PHP file (should end with .php)
+                    if not req_file.endswith('.php'):
+                        # Invalid: trying to require/include non-PHP file
+                        if req_file.endswith(('.sqlite', '.db', '.sqlite3', '.json', '.txt', '.log', '.csv')):
+                            errors.append(f"❌ CRITICAL: {php_file} requires '{req_file}' which is a data file, not a PHP file! Cannot require/include database or data files. This will cause a fatal error.")
+                        elif req_file.endswith(('.html', '.css', '.js')):
+                            errors.append(f"❌ {php_file} requires '{req_file}' which is not a PHP file. Use readfile() or include HTML differently.")
                         else:
-                            errors.append(f"❌ {php_file} requires '{req_file}' but file doesn't exist")
+                            errors.append(f"⚠️ {php_file} requires '{req_file}' which doesn't end with .php. This may be an error.")
+                    
+                    # Check if file exists (only for .php files)
+                    if req_file.endswith('.php'):
+                        req_path = os.path.join(src_dir, req_file)
+                        if not os.path.exists(req_path):
+                            # Check for similar files
+                            similar = [f for f in php_files if req_file.replace('.php', '') in f or f.replace('.php', '') in req_file]
+                            if similar:
+                                errors.append(f"❌ {php_file} requires '{req_file}' but file doesn't exist. Did you mean '{similar[0]}'?")
+                            else:
+                                errors.append(f"❌ {php_file} requires '{req_file}' but file doesn't exist")
             except Exception as e:
                 pass
         
@@ -2174,6 +2336,9 @@ OUTPUT FORMAT: You must respond with a VALID, COMPLETE JSON ARRAY only. No markd
         print("🚀 Starting Code Agent...")
         print("=" * 60)
         self._log_thought("Agent: Initializing development session")
+        
+        # Ensure Git repository exists (in case directory was deleted or is empty)
+        self._ensure_git_repo()
         
         # Step 1: Read task description
         try:
@@ -2207,6 +2372,7 @@ OUTPUT FORMAT: You must respond with a VALID, COMPLETE JSON ARRAY only. No markd
             print("=" * 60)
             self.current_feature = feature_name
             self.feature_test_passed = False
+            self.current_feature_files = []  # Reset file tracking for new feature
             
             # Process feature until all tests pass
             max_attempts = 10
@@ -2496,6 +2662,9 @@ Return ONLY the JSON array, no markdown, no explanations."""
                         "target": normalized_path,
                         "success": True
                     })
+                    # Track for current feature documentation (avoid duplicates)
+                    if normalized_path not in self.current_feature_files:
+                        self.current_feature_files.append(normalized_path)
                 except Exception as e:
                     print(f"❌ Error writing file: {e}")
                     return False, f"Error writing file {target}: {str(e)}"
@@ -2642,13 +2811,39 @@ Return ONLY the JSON array, no markdown, no explanations."""
         docs_path = os.path.join(self.output_dir, "docs", "features", f"{feature_name.lower().replace(' ', '_')}.md")
         Path(os.path.dirname(docs_path)).mkdir(parents=True, exist_ok=True)
         
-        code_files = [h['target'] for h in self.history if h.get('action') == 'write_file' and h.get('success')]
-        test_files = [f for f in code_files if 'test' in f.lower()]
-        src_files = [f for f in code_files if 'test' not in f.lower()]
+        # Use current_feature_files instead of entire history to avoid duplicates
+        # Fallback to history if current_feature_files is empty (for backward compatibility)
+        if self.current_feature_files:
+            code_files = self.current_feature_files
+        else:
+            # Fallback: get files from history but only unique ones
+            code_files = list(set([h['target'] for h in self.history if h.get('action') == 'write_file' and h.get('success')]))
         
+        # Separate test files from source files
+        test_files = [f for f in code_files if 'test' in f.lower() or f.startswith('tests/')]
+        src_files = [f for f in code_files if f not in test_files]
+        
+        # Generate documentation with detailed descriptions
         doc_content = self._generate_feature_documentation(feature_name, src_files, test_files)
         self.tools.write_file(docs_path, doc_content)
-        self.feature_docs.append({"name": feature_name, "description": doc_content[:200] + "..."})
+        
+        # Extract a meaningful description (first paragraph of overview)
+        desc_lines = doc_content.split('\n')
+        description = ""
+        in_overview = False
+        for line in desc_lines:
+            if line.startswith('## Overview'):
+                in_overview = True
+                continue
+            if in_overview and line.startswith('##'):
+                break
+            if in_overview and line.strip():
+                description += line.strip() + " "
+                if len(description) > 150:
+                    description = description[:150] + "..."
+                    break
+        
+        self.feature_docs.append({"name": feature_name, "description": description.strip() or doc_content[:200] + "..."})
         print(f"📚 Documentation generated: {docs_path}")
     
     def _generate_final_docs_and_exit(self) -> None:
@@ -2913,6 +3108,9 @@ Return ONLY the JSON array, no markdown, no explanations."""
                         "target": normalized_path,
                         "success": True
                     })
+                    # Track for current feature documentation (avoid duplicates)
+                    if normalized_path not in self.current_feature_files:
+                        self.current_feature_files.append(normalized_path)
                 except Exception as e:
                     print(f"❌ Error writing file: {e}")
                     return False, f"Error writing file {target}: {str(e)}"
@@ -3059,13 +3257,39 @@ Return ONLY the JSON array, no markdown, no explanations."""
         docs_path = os.path.join(self.output_dir, "docs", "features", f"{feature_name.lower().replace(' ', '_')}.md")
         Path(os.path.dirname(docs_path)).mkdir(parents=True, exist_ok=True)
         
-        code_files = [h['target'] for h in self.history if h.get('action') == 'write_file' and h.get('success')]
-        test_files = [f for f in code_files if 'test' in f.lower()]
-        src_files = [f for f in code_files if 'test' not in f.lower()]
+        # Use current_feature_files instead of entire history to avoid duplicates
+        # Fallback to history if current_feature_files is empty (for backward compatibility)
+        if self.current_feature_files:
+            code_files = self.current_feature_files
+        else:
+            # Fallback: get files from history but only unique ones
+            code_files = list(set([h['target'] for h in self.history if h.get('action') == 'write_file' and h.get('success')]))
         
+        # Separate test files from source files
+        test_files = [f for f in code_files if 'test' in f.lower() or f.startswith('tests/')]
+        src_files = [f for f in code_files if f not in test_files]
+        
+        # Generate documentation with detailed descriptions
         doc_content = self._generate_feature_documentation(feature_name, src_files, test_files)
         self.tools.write_file(docs_path, doc_content)
-        self.feature_docs.append({"name": feature_name, "description": doc_content[:200] + "..."})
+        
+        # Extract a meaningful description (first paragraph of overview)
+        desc_lines = doc_content.split('\n')
+        description = ""
+        in_overview = False
+        for line in desc_lines:
+            if line.startswith('## Overview'):
+                in_overview = True
+                continue
+            if in_overview and line.startswith('##'):
+                break
+            if in_overview and line.strip():
+                description += line.strip() + " "
+                if len(description) > 150:
+                    description = description[:150] + "..."
+                    break
+        
+        self.feature_docs.append({"name": feature_name, "description": description.strip() or doc_content[:200] + "..."})
         print(f"📚 Documentation generated: {docs_path}")
     
     def _generate_final_docs_and_exit(self) -> None:

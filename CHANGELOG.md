@@ -17,3 +17,4 @@
 - Risolto problema di coerenza: `api.php` ora può vedere che `db.php` esiste e usarlo invece di richiedere `database.php`
 - Il Planner mantiene coerenza tra feature successive vedendo cosa è già stato implementato
 
+
