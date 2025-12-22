@@ -1,46 +1,122 @@
-Role: You are a Senior Full Stack Web Developer specialized in simple, robust PHP applications without heavy frameworks.
-Goal: Create a web application called "BookYourSeat" to manage virtual desk bookings for a company.
-Tech Stack Requirements:
-* Frontend: HTML5, CSS3 (Modern & Clean), Vanilla JavaScript (no frameworks like React/Vue).
-* Backend: Pure PHP (Version 7.4 or 8.x compatible).
-* Database: SQLite 3 (File-based database).
-* Architecture: The app must be self-contained in a single folder named BookYourSeat.
-File Structure Constraint: The main entry point for the user interface must be BookYourSeat.html (which uses JS/AJAX to talk to the PHP backend).
-Core Features:
-1. Database Setup:
-    * Create a script (setup.php) to initialize the SQLite database (database.sqlite) if it doesn't exist.
-    * Tables:
-        * users: id, email, password_hash, is_verified, is_admin, verification_token.
-        * config: key, value (store 'total_seats' here).
-        * bookings: id, user_id, seat_number, booking_date.
-2. Authentication:
-    * User Registration: Email + Password. Generate a token and send an email (to send the email from the web server provider use code similar to the following one:$yourEmailAddress = "vittorio.margherita@buonevacanze.org";
-    * $emailSubject = "New Visitor on Buonevacanze Directly";
-* $remoteIpAddress = $_SERVER['REMOTE_ADDR'];
-* $emailContent = "Someone visited your webpage. IP address:".$remoteIpAddress;
-* // send the message
-* mail($yourEmailAddress, $emailSubject, $emailContent);
-    * )
-    * Login: Session-based.
-    * Admin Flag: One user should be manually set as admin in the DB or the first registered user becomes admin.
-1. Visual Booking System (User View):
-    * A date picker to select the day.
-    * Graphic Interface: Render boxes representing seats (e.g., Seat 1, Seat 2...).
-    * Logic:
-        * Green: Available.
-        * Red: Occupied (show "Occupied" but protect user privacy).
-        * Blue: Booked by the current user.
-    * Action: Clicking a green seat books it. Clicking a blue seat unbooks it.
-    * Constraint: Cannot unbook if the date is today or in the past (must be at least 1 day before).
-2. Admin Panel:
-    * Configuration: Input to set/update the total number of virtual seats available (e.g., 20, 50, etc.).
-    * Rooming List: Select a date and see a list/table of who booked which seat number (Name/Email + Seat Number).
-3. UI/UX:
-    * Responsive design (works on mobile).
-    * Professional, corporate look using a simple CSS framework like Bootstrap (via CDN) or custom neat CSS.
-Deliverables: Please write the code for the following files:
-1. db.php (Database connection and helper functions).
-2. api.php (Handles all AJAX requests: login, register, get_seats, book_seat, admin_actions).
-3. BookYourSeat.html (The main Single Page Application interface).
-4. setup.php (To run once to create tables).
-Implementation Note: Ensure BookYourSeat.html uses fetch() to communicate with api.php. Handle sessions correctly in PHP.
+**Obiettivo del Progetto:** Creare uno script Python autonomo per generare dati RAG sintetici di alta qualità per la specializzazione di un agente di sviluppo HTML/PHP.
+
+**Architettura:**
+1.  **Modello X (Generatore/Critico):** Genera l'Intent (il problema di coding/il requisito) e lo Valida.
+    - **Endpoint HTTP:** http://192.168.1.29:8081
+    - **API Format:** OpenAI-compatible (POST /v1/chat/completions)
+
+2.  **Modello Y (Risolutore/Agente Target):** Produce il `code_snippet` e la `description` (soluzione).
+    - **Endpoint HTTP:** http://192.168.1.29:8080
+    - **API Format:** OpenAI-compatible (POST /v1/chat/completions)
+
+3.  **Processore:** Assembla i dati e li salva in file JSON per il RAG.
+
+**Requisiti Tecnici:**
+1.  **Libreria HTTP:** Utilizzare la libreria `requests` per chiamare gli endpoint HTTP dei modelli LLM. I modelli sono già in esecuzione come server e rispondono in formato OpenAI-compatible.
+2.  **Formato richieste:** Le richieste devono essere POST a `/v1/chat/completions` con payload JSON:
+    ```python
+    {
+        "model": "local-model",
+        "messages": [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}],
+        "temperature": 0.7
+    }
+    ```
+3.  **Interazione Modelli:** I due modelli devono interfacciarsi in modo sequenziale (Output X alimenta Input Y).
+4.  **Output RAG:** Generare i dati in una cartella chiamata `rag_data/`. Per scalabilità, l'output non deve essere un unico file gigante, ma una serie di file JSON più piccoli (max 1 MB ciascuno).
+5.  **Struttura File Python:** Il progetto deve essere contenuto in un singolo file `rag_generator.py` che esegue l'intera pipeline.
+
+---
+
+### Sezione 1: Istruzioni per il Modello X (Generatore di Intent)
+
+Il Modello X deve agire come un Architetto Software Senior.
+
+**Istruzioni da codificare nel Prompt di Sistema per X:**
+* **Ruolo:** Sei un architetto senior specializzato in PHP 8 e HTML5, focalizzato su sicurezza e prestazioni.
+* **Output:** Genera un requisito di coding specifico (l'Intent) in un formato JSON strict.
+* **Vincoli:** L'Intent deve riguardare l'interazione tra HTML/PHP e deve includere almeno un vincolo di sicurezza o di libreria proprietaria (es. "usa la classe `Sanitizer::filter()`").
+
+**Formato JSON di Output Desiderato da X (salvato come variabile Python):**
+```json
+{
+  "raw_intent": "Crea una funzione PHP per gestire l'upload di immagini, limitando la dimensione a 500KB e accettando solo formati JPG o PNG, usando la nostra classe custom FileHandler.",
+  "tags": ["php", "security", "file-upload", "validation"]
+}
+
+Sezione 2: Istruzioni per il Modello Y (Risolutore di Codice)
+Il Modello Y deve agire come uno Sviluppatore Agile.
+Istruzioni da codificare nel Prompt di Sistema per Y:
+* Ruolo: Sei uno sviluppatore PHP e HTML esperto, abile a scrivere codice pulito, commentato e aderente ai vincoli.
+* Input: Riceverai l'raw_intent generato dal Modello X.
+* Output: Risolvi l'Intent. Produci il codice (PHP e/o HTML) e spiega brevemente il tuo approccio.
+Formato JSON di Output Desiderato da Y (unito al JSON di X):
+
+{
+  "code_snippet": "<?php \n // Soluzione del problema con commenti \n class FileHandler { ... } \n ?>",
+  "description": "Questo codice implementa la logica di upload utilizzando FileHandler. Ho incluso controlli sulla dimensione e sull'estensione per rispettare i vincoli di sicurezza."
+}
+
+Sezione 3: Pipeline e Struttura del Codice rag_generator.py
+Il codice Python deve:
+1. Setup HTTP Client: Creare funzioni per chiamare i modelli X e Y via HTTP usando la libreria `requests`. Esempio:
+   ```python
+   def call_model(endpoint_url: str, system_prompt: str, user_prompt: str) -> str:
+       response = requests.post(
+           f"{endpoint_url}/v1/chat/completions",
+           json={
+               "model": "local-model",
+               "messages": [
+                   {"role": "system", "content": system_prompt},
+                   {"role": "user", "content": user_prompt}
+               ],
+               "temperature": 0.7
+           },
+           timeout=120
+       )
+       return response.json()["choices"][0]["message"]["content"]
+   ```
+2. Loop di Generazione: Eseguire un loop fino a MAX_RECORDS (default 1000) coppie di (Intent, Soluzione).
+3. Chiamata a X: Chiamare X per generare l'Intent e i Tags.
+4. Chiamata a Y: Chiamare Y, passando l'Intent di X.
+5. Unione Dati: Unire i JSON di X e Y per formare il record RAG completo.
+6. Gestione File Output:
+    * Atomicità: Ogni 'coppia' (Intent + Soluzione) deve essere salvata come un singolo file JSON indipendente.
+    * Naming: Usa il formato record_YYYYMMDD_HHMMSS_UUID.json per evitare sovrascritture se lo script viene riavviato.
+    * Target Size: Ogni file sarà di circa 5-20 KB. Questo permette di gestire l'indicizzazione in modo 'granulare'.
+    * Nessun Collegamento Hardcoded: I file non devono essere linkati internamente. Il collegamento avverrà a livello di database vettoriale (RAG) tramite la similarità degli embeddings.
+7. Logica di Stop (Terminazione): Lo script deve fermarsi in tre casi:
+* Target Raggiunto: Una variabile MAX_RECORDS definita dall'utente (es. 1000).
+* Errori Consecutivi: Se il Modello X o il Modello Y falliscono nel generare un JSON valido per 3 volte di seguito, lo script deve interrompersi e salvare un log dell'errore (evita di bruciare cicli di calcolo su modelli che stanno 'allucinando').
+* Interruzione Manuale: Gestisci il segnale KeyboardInterrupt (Ctrl+C) in modo che lo script chiuda correttamente i file aperti prima di uscire. 
+
+Validazione JSON 'On-the-fly': Prima di salvare il file, lo script deve validare che le chiavi intent, code_snippet e description non siano vuote. Se il modello risponde con testo generico invece del JSON richiesto, lo script deve scartare il tentativo e riprovare (fino a un massimo di 3 tentativi per record)."
+
+**Costanti da definire:**
+- MAX_RECORDS = 1000 (numero massimo di record da generare)
+- MAX_CONSECUTIVE_FAILURES = 3 (stop dopo N errori consecutivi)
+- MODEL_X_URL = "http://192.168.1.29:8081"
+- MODEL_Y_URL = "http://192.168.1.29:8080"
+
+**Struttura della classe RagGenerator:**
+```python
+class RagGenerator:
+    def __init__(self, model_x_url: str, model_y_url: str):
+        # Inizializza URL dei modelli
+        
+    def call_model_x(self, user_prompt: str) -> dict:
+        # Chiama modello X via HTTP, ritorna JSON con raw_intent e tags
+        
+    def call_model_y(self, intent: dict) -> dict:
+        # Chiama modello Y via HTTP, ritorna JSON con code_snippet e description
+        
+    def validate_json(self, data: dict, required_keys: list) -> bool:
+        # Valida che le chiavi richieste esistano e non siano vuote
+        
+    def save_record(self, record: dict) -> str:
+        # Salva record in rag_data/record_YYYYMMDD_HHMMSS_UUID.json
+        
+    def run(self) -> None:
+        # Loop principale con gestione errori e KeyboardInterrupt
+```
+
+Focus per l'IDE: Genera il file rag_generator.py usando la libreria `requests` per le chiamate HTTP ai modelli. NON usare llama-cpp-python (i modelli sono già in esecuzione come server HTTP).

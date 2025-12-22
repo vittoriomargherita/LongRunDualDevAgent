@@ -18,3 +18,4 @@
 - Il Planner mantiene coerenza tra feature successive vedendo cosa è già stato implementato
 
 
+
