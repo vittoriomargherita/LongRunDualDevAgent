@@ -4061,18 +4061,30 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             
             if should_restart:
                 print(f"\n🔄 {restart_reason}")
-                print("   Restarting from scratch...")
-                # Clear output and restart - this will exit the validation loop
-                # and the run() method will need to be called again
-                import shutil
-                if os.path.exists(self.output_dir):
-                    shutil.rmtree(self.output_dir)
-                os.makedirs(self.output_dir, exist_ok=True)
-                os.makedirs(os.path.join(self.output_dir, "src"), exist_ok=True)
-                os.makedirs(os.path.join(self.output_dir, "tests"), exist_ok=True)
-                print("   Output cleared. Please re-run the agent to start fresh.")
-                # Exit validation loop - will need manual restart
-                break
+                print("   Attempting to fix issues without losing existing work...")
+                # CRITICAL: DO NOT DELETE OUTPUT - Instead, try to fix incrementally
+                # Only clear if accuracy is extremely low (< 10%) AND we've tried many times
+                if current_accuracy < 10.0 and completion_attempt >= 10:
+                    print("   ⚠️  Accuracy extremely low after many attempts. Creating backup before restart...")
+                    # Create backup instead of deleting
+                    backup_dir = f"{self.output_dir}_backup_{int(time.time())}"
+                    if os.path.exists(self.output_dir):
+                        import shutil
+                        shutil.copytree(self.output_dir, backup_dir, dirs_exist_ok=True)
+                        print(f"   📦 Backup created: {backup_dir}")
+                    # Only then clear (but this should rarely happen)
+                    import shutil
+                    if os.path.exists(self.output_dir):
+                        shutil.rmtree(self.output_dir)
+                    os.makedirs(self.output_dir, exist_ok=True)
+                    os.makedirs(os.path.join(self.output_dir, "src"), exist_ok=True)
+                    os.makedirs(os.path.join(self.output_dir, "tests"), exist_ok=True)
+                    print("   Output cleared. Please re-run the agent to start fresh.")
+                    break
+                else:
+                    # Continue fixing incrementally without deleting
+                    print("   Continuing with incremental fixes...")
+                    # Don't break - continue with next validation attempt
             
             # Run comprehensive validation (structure, libraries, test sync, semantic)
             all_passed, validation_feedback = self._comprehensive_validation(task_description, requirements)
@@ -4086,10 +4098,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
                     consecutive_no_progress = 0
             
             if consecutive_no_progress >= max_consecutive_no_progress:
-                print(f"\n⚠️  No progress for {max_consecutive_no_progress} attempts. Restarting...")
-                should_restart = True
-                restart_reason = f"No accuracy improvement for {max_consecutive_no_progress} attempts"
-                # Will restart in next iteration
+                print(f"\n⚠️  No progress for {max_consecutive_no_progress} attempts (current accuracy: {current_accuracy:.2f}%).")
+                # Don't restart automatically - instead, try more aggressive fixes
+                print("   Trying more aggressive fixes instead of restarting...")
+                # Only restart if accuracy is extremely low AND we've tried many times
+                if current_accuracy < 5.0 and completion_attempt >= 15:
+                    should_restart = True
+                    restart_reason = f"No accuracy improvement for {max_consecutive_no_progress} attempts and accuracy < 5%"
+                else:
+                    # Continue trying - reduce counter to give more chances
+                    consecutive_no_progress = max(0, consecutive_no_progress - 2)
+                    print(f"   Continuing with incremental improvements...")
             
             if all_passed and current_accuracy >= accuracy_threshold:
                 # Final double-check with specific requirements
@@ -4390,6 +4409,7 @@ Return ONLY the JSON array, no markdown."""
             r"(KeyError):\s*(.+)",
             r"(SyntaxError):\s*(.+)",
             r"(NameError):\s*(.+)",
+            r"(AssertionError):\s*(.+)",
         ]
         
         for pattern in error_patterns:
@@ -4403,12 +4423,15 @@ Return ONLY the JSON array, no markdown."""
                 error_detail = re.sub(r'line \d+', '', error_detail)
                 error_detail = re.sub(r'File "[^"]+", ', '', error_detail)
                 error_detail = re.sub(r'/[^\s]+\.py', '', error_detail)
+                error_detail = re.sub(r'/[^\s]+\.php', '', error_detail)
                 
                 # Normalize method signatures (remove exact parameter counts)
                 error_detail = re.sub(r'\(\) takes \d+ positional arguments but \d+ were given', 
                                      r'() takes wrong number of arguments', error_detail)
                 error_detail = re.sub(r'missing \d+ required positional argument', 
                                      r'missing required argument', error_detail)
+                error_detail = re.sub(r'missing \d+ required positional arguments', 
+                                     r'missing required arguments', error_detail)
                 
                 # Normalize module names (keep the module name but remove path details)
                 if "No module named" in error_detail:
@@ -4416,12 +4439,34 @@ Return ONLY the JSON array, no markdown."""
                     if module_match:
                         return f"{error_type}: No module named '{module_match.group(1)}'"
                 
-                # Clean up whitespace
-                error_detail = ' '.join(error_detail.split())
+                # Normalize import errors
+                if "cannot import name" in error_detail.lower():
+                    import_match = re.search(r"cannot import name ['\"]([^'\"]+)['\"]", error_detail, re.IGNORECASE)
+                    if import_match:
+                        return f"{error_type}: cannot import name '{import_match.group(1)}'"
                 
-                return f"{error_type}: {error_detail[:200]}"  # Limit length
+                # Normalize attribute errors
+                if "has no attribute" in error_detail.lower():
+                    attr_match = re.search(r"['\"]([^'\"]+)['\"] has no attribute ['\"]([^'\"]+)['\"]", error_detail, re.IGNORECASE)
+                    if attr_match:
+                        return f"{error_type}: '{attr_match.group(1)}' has no attribute '{attr_match.group(2)}'"
+                
+                # Clean up whitespace and limit length
+                error_detail = ' '.join(error_detail.split())
+                normalized = f"{error_type}: {error_detail[:150]}"  # Limit to 150 chars
+                
+                # Remove any remaining file paths
+                normalized = re.sub(r'/[^\s:]+', '', normalized)
+                
+                return normalized
         
-        # If no pattern matches, return first 100 chars of error
+        # If no pattern matches, extract first meaningful error line
+        lines = error_msg.split('\n')
+        for line in lines:
+            if any(err in line for err in ['Error', 'Exception', 'Failed', 'Traceback']):
+                return line[:150].strip()
+        
+        # Fallback: return first 100 chars
         return error_msg[:100].strip()
     
     def _calculate_accuracy_percentage(self, requirements: List[Dict[str, Any]], task_description: str) -> tuple[float, Dict[str, Any]]:
@@ -5392,7 +5437,33 @@ JSON only, no markdown:"""
                 
                 # Generate and write file
                 try:
+                    # CRITICAL: Backup existing file if it exists and is valid
+                    file_exists = os.path.exists(normalized_path)
+                    if file_exists:
+                        # Check if file has content (not empty)
+                        try:
+                            with open(normalized_path, 'r', encoding='utf-8') as f:
+                                existing_content = f.read()
+                            if len(existing_content.strip()) > 100:  # File has substantial content
+                                # Create backup
+                                backup_path = f"{normalized_path}.backup_{int(time.time())}"
+                                import shutil
+                                shutil.copy2(normalized_path, backup_path)
+                                print(f"   💾 Backed up existing file to: {backup_path}")
+                        except Exception as e:
+                            print(f"   ⚠️  Could not backup file: {e}")
+                    
                     code_content = self._ask_executor(content_instruction, normalized_path)
+                    
+                    # Validate that generated content is not empty
+                    if not code_content or len(code_content.strip()) < 10:
+                        print(f"   ⚠️  Generated content is too short, skipping write")
+                        if file_exists:
+                            print(f"   ✅ Keeping existing file")
+                            continue
+                        else:
+                            return False, f"Generated content for {target} is empty"
+                    
                     self.tools.write_file(normalized_path, code_content)
                     self._log_thought(f"File written: {normalized_path}")
                     
