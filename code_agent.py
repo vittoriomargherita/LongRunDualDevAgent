@@ -2977,9 +2977,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
                     except Exception as e:
                         issues.append(f"Error reading {file}: {e}")
         
-        # Check each test file
+        # Check each test file (EXCLUDE backup files)
         for test_file in os.listdir(tests_dir):
             if not test_file.endswith('.py'):
+                continue
+            # Skip backup files
+            if '.backup_' in test_file:
                 continue
             
             test_path = os.path.join(tests_dir, test_file)
@@ -3994,6 +3997,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         accuracy_threshold = 100.0  # Must reach 100% accuracy
         consecutive_no_progress = 0  # Track if we're stuck
         max_consecutive_no_progress = 10  # Restart if no progress for 10 attempts
+        consecutive_api_errors = 0  # Track consecutive API failures
+        max_consecutive_api_errors = 5  # Stop if API fails 5 times in a row
         
         while not all_requirements_met:
             completion_attempt += 1
@@ -4001,8 +4006,28 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             print(f"📋 Validation attempt {completion_attempt} (Target: 100% Accuracy)")
             print(f"{'─' * 50}")
             
-            # Calculate current accuracy
-            current_accuracy, accuracy_report = self._calculate_accuracy_percentage(requirements, task_description)
+            # Check for consecutive API errors - if too many, stop to avoid infinite loop
+            if consecutive_api_errors >= max_consecutive_api_errors:
+                print(f"\n🛑 STOPPING: API failed {max_consecutive_api_errors} times consecutively.")
+                print(f"   The LLM server may be down or misconfigured.")
+                print(f"   Please check the server at {self.planner_client.api_url}")
+                print(f"   Current accuracy: {current_accuracy:.2f}%")
+                break
+            
+            # Calculate current accuracy (may fail if API is down)
+            try:
+                current_accuracy, accuracy_report = self._calculate_accuracy_percentage(requirements, task_description)
+                consecutive_api_errors = 0  # Reset on success
+            except Exception as e:
+                if "API request failed" in str(e) or "400" in str(e) or "Bad Request" in str(e):
+                    consecutive_api_errors += 1
+                    print(f"\n⚠️  API Error ({consecutive_api_errors}/{max_consecutive_api_errors}): {str(e)[:100]}")
+                    print(f"   Skipping this validation attempt...")
+                    time.sleep(5)  # Wait before retrying
+                    continue
+                else:
+                    # Other errors - re-raise
+                    raise
             
             # Track in history
             validation_history.append({
@@ -4042,17 +4067,36 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             # Check if we've reached 100% accuracy
             if current_accuracy >= accuracy_threshold:
                 # Double-check with comprehensive validation
-                all_passed, validation_feedback = self._comprehensive_validation(task_description, requirements)
-                if all_passed:
-                    reqs_met, unmet_reqs = self._verify_requirements_met(requirements, task_description)
-                    if reqs_met:
-                        all_requirements_met = True
-                        print("\n" + "=" * 60)
-                        print("✅ 100% ACCURACY ACHIEVED!")
-                        print("✅ All validation checks PASSED!")
-                        print("✅ All requirements verified as met!")
-                        print("=" * 60)
-                        break
+                try:
+                    all_passed, validation_feedback = self._comprehensive_validation(task_description, requirements)
+                    if all_passed:
+                        try:
+                            reqs_met, unmet_reqs = self._verify_requirements_met(requirements, task_description)
+                            if reqs_met:
+                                consecutive_api_errors = 0  # Reset on success
+                                all_requirements_met = True
+                                print("\n" + "=" * 60)
+                                print("✅ 100% ACCURACY ACHIEVED!")
+                                print("✅ All validation checks PASSED!")
+                                print("✅ All requirements verified as met!")
+                                print("=" * 60)
+                                break
+                        except Exception as e:
+                            if "API request failed" in str(e) or "400" in str(e) or "Bad Request" in str(e):
+                                consecutive_api_errors += 1
+                                print(f"   ⚠️  API error during requirement verification ({consecutive_api_errors}/{max_consecutive_api_errors}): {str(e)[:100]}")
+                                if consecutive_api_errors >= max_consecutive_api_errors:
+                                    break
+                                continue
+                            raise
+                except Exception as e:
+                    if "API request failed" in str(e) or "400" in str(e) or "Bad Request" in str(e):
+                        consecutive_api_errors += 1
+                        print(f"   ⚠️  API error during validation ({consecutive_api_errors}/{max_consecutive_api_errors}): {str(e)[:100]}")
+                        if consecutive_api_errors >= max_consecutive_api_errors:
+                            break
+                        continue
+                    raise
             
             # Check if we should restart vs continue
             should_restart, restart_reason = self._should_restart_vs_continue(
@@ -4087,7 +4131,21 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
                     # Don't break - continue with next validation attempt
             
             # Run comprehensive validation (structure, libraries, test sync, semantic)
-            all_passed, validation_feedback = self._comprehensive_validation(task_description, requirements)
+            try:
+                all_passed, validation_feedback = self._comprehensive_validation(task_description, requirements)
+                consecutive_api_errors = 0  # Reset on success
+            except Exception as e:
+                if "API request failed" in str(e) or "400" in str(e) or "Bad Request" in str(e):
+                    consecutive_api_errors += 1
+                    print(f"\n⚠️  API Error during validation ({consecutive_api_errors}/{max_consecutive_api_errors}): {str(e)[:100]}")
+                    if consecutive_api_errors >= max_consecutive_api_errors:
+                        print(f"   Stopping due to repeated API failures...")
+                        break
+                    # Use cached validation feedback if available
+                    all_passed = False
+                    validation_feedback = f"API Error: {str(e)[:200]}"
+                else:
+                    raise
             
             # Check for progress
             if len(validation_history) >= 2:
@@ -4183,12 +4241,23 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
                         "details": "Code doesn't fully implement requested features"
                     })
                 
-                fix_plan = self._get_completion_fix_plan(unmet_from_validation, validation_feedback, task_description)
-                if fix_plan:
-                    print(f"   Executing {len(fix_plan)} fix actions...")
-                    self._execute_feature_plan(fix_plan, "Validation Fixes", False)
-                else:
-                    print("   ⚠️  Could not generate fix plan. Retrying validation...")
+                try:
+                    fix_plan = self._get_completion_fix_plan(unmet_from_validation, validation_feedback, task_description)
+                    if fix_plan:
+                        print(f"   Executing {len(fix_plan)} fix actions...")
+                        self._execute_feature_plan(fix_plan, "Validation Fixes", False)
+                        consecutive_api_errors = 0  # Reset on success
+                    else:
+                        print("   ⚠️  Could not generate fix plan. Retrying validation...")
+                except Exception as e:
+                    if "API request failed" in str(e) or "400" in str(e):
+                        consecutive_api_errors += 1
+                        print(f"   ⚠️  API error generating fix plan ({consecutive_api_errors}/{max_consecutive_api_errors}): {str(e)[:100]}")
+                        if consecutive_api_errors >= max_consecutive_api_errors:
+                            print(f"   Stopping due to repeated API failures...")
+                            break
+                    else:
+                        raise
                 time.sleep(2)
         
         if not all_requirements_met:
@@ -5003,13 +5072,20 @@ Return ONLY the JSON array."""
         library_checks = {}
         
         # Check for specific libraries mentioned in task
-        if 'llama-cpp-python' in task_lower or 'llama_cpp' in task_lower:
+        # CRITICAL: Only check for llama-cpp-python if task explicitly says to use it
+        # AND does NOT say to use requests instead
+        use_llama = ('llama-cpp-python' in task_lower or 'llama_cpp' in task_lower)
+        use_requests = ('requests' in task_lower and 'not use requests' not in task_lower)
+        explicit_no_llama = ('not use llama' in task_lower or 'do not use llama' in task_lower or 
+                             'use requests' in task_lower and 'not llama' in task_lower)
+        
+        if use_llama and not explicit_no_llama and not (use_requests and 'not llama' in task_lower):
             library_checks['llama-cpp-python'] = {
                 'import_patterns': [r'from\s+llama_cpp\s+import', r'import\s+llama_cpp'],
                 'usage_patterns': [r'Llama\s*\(', r'llama_cpp\.']
             }
         
-        if 'requests' in task_lower and 'not use requests' not in task_lower:
+        if use_requests:
             library_checks['requests'] = {
                 'import_patterns': [r'import\s+requests', r'from\s+requests\s+import'],
                 'usage_patterns': [r'requests\.(get|post|put|delete)']
